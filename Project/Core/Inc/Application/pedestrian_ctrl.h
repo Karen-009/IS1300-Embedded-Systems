@@ -26,6 +26,7 @@ void setCarLight(char color[]);
 bool isButtonPressed(void);
 void togglePedestrianIndicator(void);
 bool isDelayPassed(int x, int y);
+void
 
 
 #endif
