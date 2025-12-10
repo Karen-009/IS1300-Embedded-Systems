@@ -65,33 +65,22 @@ void Error_Handler(void);
 #define USART_RX_GPIO_Port GPIOA
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
+#define Reset_Pin GPIO_PIN_7
+#define Reset_GPIO_Port GPIOA
+#define STPC_Pin GPIO_PIN_12
+#define STPC_GPIO_Port GPIOB
+#define Enable_Pin GPIO_PIN_7
+#define Enable_GPIO_Port GPIOC
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
+#define SCLK___595SHCP_Pin GPIO_PIN_10
+#define SCLK___595SHCP_GPIO_Port GPIOC
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
-#define PB5_Pin GPIO_PIN_5
-#define PB5_GPIO_Port GPIOB
-
-//Latch pin
-#define SR_STCP_GPIO_Port GPIOB
-#define SR_STCP_Pin GPIO_PIN_12
-//Enable pin
-#define SR_ENABLE_GPIO_Port GPIOC
-#define SR_ENABLE_Pin GPIO_PIN_7
-//Reset pin
-#define SR_RESET_GPIO_Port GPIOA
-#define SR_RESET_GPIO_Pin GPIO_PIN_7
-//Data pin
-#define SR_DS_GPIO_Port GPIOB
-#define ST_DS_Pin GPIO_PIN_5
-//Clock pin
-#define SR_SCLK_GPIO_Port GPIOC
-#define SR_SCLK_GPIO_Port GPIO_PIN_10
-
-#define PED_BUTTON_GPIO_Port GPIOC
-#define PED_BUTTON_Pin GPIO_PIN_13
+#define PB5___MOSI_Pin GPIO_PIN_5
+#define PB5___MOSI_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
