@@ -16,15 +16,6 @@ void ShiftReg_SetAllLights(uint8_t reg1_data, uint8_t reg2_data, uint8_t reg3_da
 void ShiftReg_ClearAll(void); //Turns off all LEDs
 void ShiftReg_TestSequence(void); //For testing
 
-//LEDs configuration
-	#define PED_RED_GPIO_Port
-	#define PED_RED_Pin
-	#define GPIO_PIN_SET
-	#define PED_GREEN_GPIO_Port
-	#define PED_GREEN_Pin
-	#define GPIO_PIN_RESET
-	#define GPIO_PIN_RESET
-
 #ifdef __cplusplus
 }
 #endif

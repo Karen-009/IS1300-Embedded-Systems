@@ -16,9 +16,9 @@
 	void PedestrianCtrlTask(void *argument); //Task function prototype, for FreeRTOS
 
 	//Public API functions def.
-	void PedestrinCtrl_Init(void);
-	void PedestrainCtrl_Start(void);
-	void PedestraianCtrl_SetConfig(const TrafficConfig_t *newConfig);
+	void PedestrianCtrl_Init(void);
+	void PedestrianCtrl_Start(void);
+	void PedestrianCtrl_SetConfig(const TrafficConfig_t *newConfig);
 
 	//Debug functions
 	const char* PedestrianCtrl_getStateString(PedestrianState_t state);

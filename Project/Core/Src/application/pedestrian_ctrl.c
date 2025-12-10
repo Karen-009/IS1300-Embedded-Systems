@@ -39,13 +39,13 @@ static void ShiftOutByte(uint8_t data) {
 }
 
 static void UpdateShiftRegisters(void) {
-	HAL_GPIO_WritePin(GPIB, GPIO_PIN_12, GPIO_PIN_RESET); //Set latch to low (hold outputs while shifting)
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET); //Set latch to low (hold outputs while shifting)
 	//Because data shifts though the chain
 	ShiftOutByte(shiftRegData[2]); //U3
 	ShiftOutByte(shiftRegData[1]); //U2
 	ShiftOutByte(shiftRegData[0]); //U1
 
-	HAL_GPIO_WritePin(GPIB, GPIO_PIN_12, GPIO_PIN_SET); //Set latch to high
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET); //Set latch to high
 }
 
 static void SetPedestrianLight(LightState_t state) {
@@ -116,7 +116,7 @@ static void TogglePedestrianIndicator(void) {
  * Check if pedestrian button is pressed
  */
 static bool IsButtonPressed(void) {
-	return (HAL_GPIO_ReadPin(PED_BUTTON_GPIO_Port, PED_BUTTON_Pin) == GPIO_PIN_RESET);
+	return (HAL_GPIO_ReadPin(B1_GPIO_PORT, B1_PIN) == GPIO_PIN_RESET);
 }
 /*
  * Check if a delay period has passed
@@ -186,8 +186,8 @@ uint32_t PedestrianCtrl_GetCycleCount(void) {
 	return cycleCounter;
 }
 
-void pedestrian_ctrl_task(void *arguemnt) {
-	PedestrainCtrl_Init(); //Initialize task
+void pedestrianCtrlTask(void *arguemnt) {
+	PedestrianCtrl_Init(); //Initialize task
 
 	//Task timing variables
 	TickType_t xLastWakeTime = xTaskGetTickCount();
