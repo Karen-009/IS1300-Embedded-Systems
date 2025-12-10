@@ -28,21 +28,14 @@ static uint32_t cycleCounter = 0;
 /*Private helper functions
  * Sets pedestrian LEDs to specified states: RED, GREEN, OFF (for blinking)
  */
+
 static void ShiftOutByte(uint8_t data) {
-	for(int8_t i = 7; i >= 0; i--) {
-		//Shift out MSB pin (PB5)
-		if(data & (1 << i)) {
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-		} else {
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-		}
-		//Set Clock pulse to PC10
-		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
-		//Short delay
-		for(volatile int d = 0; d < 5; d++) {
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
-		}
-	}
+    for(int8_t i = 7; i >= 0; i--) {
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, (data & (1 << i)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
+        HAL_Delay(1); // small delay
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
+    }
 }
 
 static void UpdateShiftRegisters(void) {
@@ -96,7 +89,7 @@ static void SetCarLight(LightState_t state) {
 		shiftRegData[0] |= BIT_TL1_ORANGE;
 		break;
 	case LIGHT_GREEN:
-		shiftRegData[0] |= BIT_PL1_GREEN;
+		shiftRegData[0] |= BIT_TL1_GREEN;
 		break;
 	default:
 		shiftRegData[0] |= BIT_PL1_RED;
@@ -133,17 +126,16 @@ static bool IsButtonPressed(void) {
  */
 
 static bool IsDelayPassed(TickType_t startTime, uint32_t delayMs) {
-	TickType_t currentTime = xTaskGetTickCount();
-	TickType_t delayTicks = pdMS_TO_TICKS(delayMS);
-
-	return ((currentTime - startTime) >= delayTime);
+    TickType_t currentTime = xTaskGetTickCount();
+    TickType_t delayTicks = pdMS_TO_TICKS(delayMs);
+    return ((currentTime - startTime) >= delayTicks);
 }
 
 /*
  * Public API functions
  */
 
-void PedestrainCtrl_Init(void) {
+void PedestrianCtrl_Init(void) {
 	//Initialize state
 	currentState = STATE_INIT;
 	cycleCounter = 0;
@@ -152,7 +144,7 @@ void PedestrainCtrl_Init(void) {
 	memset(shiftRegData, 0, sizeof(shiftRegData));
 
 	//Set initial lights(RS 1.1)
-	SetPedestrainLight(LIGHT_RED);
+	SetPedestrianLight(LIGHT_RED);
 	SetCarLight(LIGHT_GREEN);
 
 	//Initialize timers
@@ -178,7 +170,7 @@ void PedestrainCtrl_SetConfig(const TrafficConfig_t *newConfig) {
 	}
 }
 
-const char* PedestrainCtrl_GetStateString(PedestrianState_t state) {
+const char* PedestrianCtrl_GetStateString(PedestrianState_t state) {
 	switch (state) {
 	case STATE_INIT:	return "INIT";
 	case STATE_WAIT_BUTTON:	return "WAIT_BUTTON";
@@ -201,7 +193,7 @@ void pedestrian_ctrl_task(void *arguemnt) {
 	TickType_t xLastWakeTime = xTaskGetTickCount();
 	const TickType_t xTaskPeriod = pdMS_TO_TICKS(10); //10ms per task period
 
-	TickType_t xLastBlinTime = xTaskgetTickCount(); //Blinking timing variables
+	TickType_t xLastBlinkTime = xTaskGetTickCount(); //Blinking timing variables
 
 //Main task loop
 	for(;;) {
