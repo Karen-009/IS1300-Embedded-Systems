@@ -51,6 +51,9 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  /* Configure EXTI interrupt */
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);  // Medium priority
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);          // B1_Pin is PC13 → EXTI13
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, LD2_Pin|Reset_Pin, GPIO_PIN_RESET);
@@ -64,7 +67,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LD2_Pin Reset_Pin */

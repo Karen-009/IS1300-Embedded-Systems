@@ -116,7 +116,7 @@ static void TogglePedestrianIndicator(void) {
  * Check if pedestrian button is pressed
  */
 static bool IsButtonPressed(void) {
-	return (HAL_GPIO_ReadPin(B1_GPIO_PORT, B1_PIN) == GPIO_PIN_RESET);
+	return (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET);
 }
 /*
  * Check if a delay period has passed
@@ -153,13 +153,13 @@ void PedestrianCtrl_Init(void) {
 	xWalkingStartTime = 0;
 
 	//Enables shift register output, OE
-	HAL_GPIO_WritePin(SR_Enable_GPIO_PORT, SR_ENABLE_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET);
 	//Release shift register reset, MR
-	HAL_GPIO_WritePin(SR_RESET_GPIO_PORT, SR_RESET_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(Reset_GPIO_Port, RESET_Pin, GPIO_PIN_SET);
 
 }
 
-void PedestrainCtrl_SetConfig(const TrafficConfig_t *newConfig) {
+void PedestrianCtrl_SetConfig(const TrafficConfig_t *newConfig) {
 	if (newConfig != NULL) {
 		if(newConfig->toggleFreq >= 10 &&
 			newConfig->pedestrianDelay >= 1000 &&
@@ -207,19 +207,19 @@ void pedestrianCtrlTask(void *arguemnt) {
 		case STATE_WAIT_BUTTON: //Button Pressed?
 			if (IsButtonPressed()) {
 				currentState = STATE_BLINKING_PED;
-				xBlinkStart = xTaskGetTickCount();
-				XLastBlinkTime = xTaskGetTickCount();
+				xBlinkStartTime = xTaskGetTickCount();
+				xLastBlinkTime = xTaskGetTickCount();
 			}
 			break;
 
 		case STATE_BLINKING_PED:
 			if(IsDelayPassed(xLastBlinkTime, config.toggleFreq)) { //RS 1.2: Toggle Pedestrian LED if Button Pressed = yes
 				TogglePedestrianIndicator();
-				xLastBlinkTime = xTaskgetTickCount();
+				xLastBlinkTime = xTaskGetTickCount();
 			}
 			if(IsDelayPassed(xBlinkStartTime, config.pedestrianDelay)) {
 				currentState = STATE_CAR_ORANGE;
-				SetPedestrainLight(LIGHT_OFF); //Stop blinking
+				SetPedestrianLight(LIGHT_OFF); //Stop blinking
 				xOrangeStartTime = xTaskTickCount();
 			}
 			break;
