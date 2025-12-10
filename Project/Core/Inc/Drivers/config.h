@@ -38,11 +38,11 @@
 	#define DEFAULT_ORANGE_DELAY 2000
 
 
-static uint8_t shiftRegisterData[3] = {0, 0, 0}; //U1, U2, U3
+static uint8_t shiftRegData[3] = {0, 0, 0}; //U1, U2, U3
 //Bit definitions for shift register U1
-#define BIT_TL_RED (1 << 0) //U1, Q0
-#define BIT_TL_ORANGE (1 << 1) //U1, Q1
-#define BIT_TL_GREEN (1 << 2) //U1, Q2
+#define BIT_TL1_RED (1 << 0) //U1, Q0
+#define BIT_TL1_ORANGE (1 << 1) //U1, Q1
+#define BIT_TL1_GREEN (1 << 2) //U1, Q2
 
 #define BIT_PL1_RED (1 << 3) //U1, Q3
 #define BIT_PL1_GREEN (1 << 4) //U1, Q4

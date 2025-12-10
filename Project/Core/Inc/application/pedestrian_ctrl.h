@@ -13,7 +13,7 @@
 #ifdef __cplusplus
 	extern "C" {
 #endif
-	void PedestrianCtrlTask(void *argument); //Task function prototype, for FreeRTOS
+	void pedestrianCtrlTask(void *argument); //Task function prototype, for FreeRTOS
 
 	//Public API functions def.
 	void PedestrianCtrl_Init(void);

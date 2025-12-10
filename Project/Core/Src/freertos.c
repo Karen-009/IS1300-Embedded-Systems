@@ -144,7 +144,10 @@ void StartTask02(void *argument)
 {
   /* USER CODE BEGIN StartTask02 */
   /* Infinite loop */
-	  pedestrianCtrlTask(argument);
+  for(;;)
+  {
+    osDelay(1);
+  }
   /* USER CODE END StartTask02 */
 }
 
