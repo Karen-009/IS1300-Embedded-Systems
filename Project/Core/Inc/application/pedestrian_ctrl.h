@@ -1,13 +1,13 @@
 //Handles the pedestrian crossings (upper & lower)
 //Priority: normal(osPriorityNormal)
 
-#ifndef PEDESTRIAN_H
-#define PEDESTRIAN_H
+#ifndef PEDESTRIAN_CONTRL_H
+#define PEDESTRIAN_CONTROL_H
 
 #include <FreeRTOSConfig.h>
 #include <FreeRTOS.h>
 #include <task.h>
-#include <config.h>
+#include "config.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -18,11 +18,10 @@
 
 	//Public API functions def.
 	void PedestrianCtrl_Init(void);
-	void PedestrianCtrl_Start(void);
 	void PedestrianCtrl_SetConfig(const TrafficConfig_t *newConfig);
 
 	//Debug functions
-	const char* PedestrianCtrl_getStateString(PedestrianState_t state);
+	const char* PedestrianCtrl_GetStateString(PedestrianState_t state);
 	uint32_t PedestrianCtrl_GetCycleCount(void);
 
 #ifdef __cplusplus
