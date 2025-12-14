@@ -5,6 +5,7 @@
 #define PEDESTRIAN_H
 
 #include <FreeRTOSConfig.h>
+#include <FreeRTOS.h>
 #include <task.h>
 #include <config.h>
 #include <stdbool.h>
