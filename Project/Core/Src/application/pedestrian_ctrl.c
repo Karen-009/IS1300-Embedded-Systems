@@ -9,6 +9,7 @@ Included functions:
 #include "cmsis_os2.h" //osDelay (CMSIS-RTOS v2)
 #include <string.h>
 #include "config.h"
+#include <stdbool.h>
 
 //Private variables (static for encapsulation)
 
@@ -220,7 +221,7 @@ void pedestrianCtrlTask(void *arguemnt) {
 			if(IsDelayPassed(xBlinkStartTime, config.pedestrianDelay)) {
 				currentState = STATE_CAR_ORANGE;
 				SetPedestrianLight(LIGHT_OFF); //Stop blinking
-				xOrangeStartTime = xTaskTickCount();
+				xOrangeStartTime = xTaskGetTickCount();
 			}
 			break;
 

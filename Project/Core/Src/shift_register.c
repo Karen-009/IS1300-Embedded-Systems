@@ -3,5 +3,5 @@
 #include "gpio.h"
 
 void ShiftReg_Init(void) {
-	HAL_GPIO_WritePin(SHIFT_RESET_GPIO_PORT, SHIFT_RESET_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(, SHIFT_RESET_Pin, GPIO_PIN_SET);
 }
