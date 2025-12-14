@@ -4,12 +4,14 @@ Included functions:
 	int pdMS_to:TICKS();
  */
 
-#include "application/pedestrian_ctrl.h"
+#include "../Inc/application/pedestrian_ctrl.h"
 #include "main.h" //HAL definitions
 #include "cmsis_os2.h" //osDelay (CMSIS-RTOS v2)
 #include <string.h>
-#include "config.h"
+#include "../Inc/config.h"
 #include <stdbool.h>
+#include "spi.h"
+#include "../Inc/config.h"
 
 //Private variables (static for encapsulation)
 
@@ -156,7 +158,7 @@ void PedestrianCtrl_Init(void) {
 	//Enables shift register output, OE
 	HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET);
 	//Release shift register reset, MR
-	HAL_GPIO_WritePin(Reset_GPIO_Port, RESET_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(Reset_GPIO_Port, Reset_Pin, GPIO_PIN_SET);
 
 }
 

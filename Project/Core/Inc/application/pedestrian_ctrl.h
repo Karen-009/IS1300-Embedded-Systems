@@ -1,13 +1,13 @@
 //Handles the pedestrian crossings (upper & lower)
 //Priority: normal(osPriorityNormal)
 
-#ifndef PEDESTRIAN_CONTRL_H
-#define PEDESTRIAN_CONTROL_H
+#ifndef PEDESTRIAN_CTRL_H
+#define PEDESTRIAN_CTRL_H
 
 #include <FreeRTOSConfig.h>
 #include <FreeRTOS.h>
 #include <task.h>
-#include "config.h"
+#include "./config.h"
 #include <stdbool.h>
 #include <stdint.h>
 
