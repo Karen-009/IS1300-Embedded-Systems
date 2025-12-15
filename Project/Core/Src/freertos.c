@@ -22,6 +22,10 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
+#include "ssd1306.h"
+#include "ssd1306_fonts.h"
+#include "ssd1306_tests.h"
+
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -36,6 +40,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 extern SPI_HandleTypeDef hspi3;
+extern I2C_HandleTypeDef hi2c1;
 
 /* USER CODE END PD */
 
@@ -106,6 +111,8 @@ void MX_FREERTOS_Init(void) {
   /* creation of pedestrianCtrl */
   pedestrianCtrlHandle = osThreadNew(StartTask02, NULL, &pedestrianCtrl_attributes);
 
+
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -148,12 +155,16 @@ void StartTask02(void *argument)
   // 1. LD2 shows task started
   for(int i = 0; i < 3; i++) {
       HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+      //maybe display here?
+
       osDelay(200);
   }
 
   // 2. Initialize shift registers
   HAL_GPIO_WritePin(Reset_GPIO_Port, Reset_Pin, GPIO_PIN_SET);     // Release reset
   HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET); // Enable outputs
+  ssd1306_Init();							//OLED init
   osDelay(100);
 
   // 3. TEST ONLY PEDESTRIAN LEDs
@@ -217,6 +228,7 @@ void StartTask02(void *argument)
 
   while(1) {
       osDelay(1000);
+      ssd1306_TestAll();
   }
 
   /* USER CODE END StartTask02 */

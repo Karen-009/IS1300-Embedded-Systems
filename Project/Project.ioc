@@ -251,3 +251,6 @@ board=NUCLEO-L476RG
 boardIOC=true
 rtos.0.ip=FREERTOS
 isbadioc=false
+isbadioc=false
+isbadioc=false
+isbadioc=false
