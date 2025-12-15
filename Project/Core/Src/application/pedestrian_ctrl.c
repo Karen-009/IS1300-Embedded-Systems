@@ -48,7 +48,7 @@ static void UpdateShiftRegisters(void) {
 	    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);  // STCP = LOW
 
 	    // 2. Send data via SPI - ALL 3 BYTES in ONE transmission
-	    uint8_t spiData[3] = {shiftRegData[2], shiftRegData[1], shiftRegData[0]};
+	    uint8_t spiData[3] = {shiftRegData[0], shiftRegData[1], shiftRegData[2]};
 
 	    // Try with HAL_SPI_Transmit for all 3 bytes at once
 	    status = HAL_SPI_Transmit(&hspi3, spiData, 3, HAL_MAX_DELAY);
@@ -235,8 +235,8 @@ uint32_t PedestrianCtrl_GetCycleCount(void) {
 void pedestrianCtrlTask(void *argument) {
 
 	//Enables shift register output, OE
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
     PedestrianCtrl_Init(); //Initialize task
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
     //Task timing variables
     uint32_t xLastWakeTime = osKernelGetTickCount();
