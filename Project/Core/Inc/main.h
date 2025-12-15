@@ -72,6 +72,12 @@ void Error_Handler(void);
 #define Enable_GPIO_Port GPIOC
 #define Reset_Pin GPIO_PIN_9
 #define Reset_GPIO_Port GPIOC
+#define PA15_Pin GPIO_PIN_15
+#define PA15_GPIO_Port GPIOA
+#define PA15_EXTI_IRQn EXTI15_10_IRQn
+#define PB7_Pin GPIO_PIN_7
+#define PB7_GPIO_Port GPIOB
+#define PB7_EXTI_IRQn EXTI9_5_IRQn
 
 /* USER CODE BEGIN Private defines */
 

@@ -11,6 +11,7 @@ Included functions:
 #include "../Inc/config.h"
 #include <stdbool.h>
 #include "spi.h"
+#include "usart.h"
 
 //Private variables (static for encapsulation)
 
@@ -31,23 +32,27 @@ static uint32_t cycleCounter = 0;
  * Sets pedestrian LEDs to specified states: RED, GREEN, OFF (for blinking)
  */
 
-static void ShiftOutByte(uint8_t data) {
+/*static void ShiftOutByte(uint8_t data) {
     for(int8_t i = 7; i >= 0; i--) {
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, (data & (1 << i)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
         HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_SET);
         HAL_Delay(1); // small delay
         HAL_GPIO_WritePin(GPIOC, GPIO_PIN_10, GPIO_PIN_RESET);
     }
-}
+}*/
 
 static void UpdateShiftRegisters(void) {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET); //Set latch to low (hold outputs while shifting)
-	//Because data shifts though the chain
-	ShiftOutByte(shiftRegData[2]); //U3
-	ShiftOutByte(shiftRegData[1]); //U2
-	ShiftOutByte(shiftRegData[0]); //U1
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET); //Set latch to high
+    // Send data
+    HAL_SPI_Transmit(&hspi3, &shiftRegData[2], 1, HAL_MAX_DELAY);
+    HAL_SPI_Transmit(&hspi3, &shiftRegData[1], 1, HAL_MAX_DELAY);
+    HAL_SPI_Transmit(&hspi3, &shiftRegData[0], 1, HAL_MAX_DELAY);
+
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+
+    // Small delay to ensure shift register latches the data
+    HAL_Delay(1);  // Or use a smaller delay with HAL_Delay_us() if available
 }
 
 static void SetPedestrianLight(LightState_t state) {
@@ -113,11 +118,20 @@ static void TogglePedestrianIndicator(void) {
 	}
 }
 
-/*
- * Check if pedestrian button is pressed
- */
-static bool IsButtonPressed(void) {
-	return (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET);
+// Only check upper pedestrian button (PA15/SW5)
+static bool IsButtonPressedDebounced(void) {
+    static uint32_t lastPressTime = 0;
+    const uint32_t debounceDelay = 50;
+
+    uint32_t currentTime = osKernelGetTickCount();
+
+    // Only check PA15 (upper crossing)
+    if ((HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_15) == GPIO_PIN_RESET) &&
+        ((currentTime - lastPressTime) > debounceDelay)) {
+        lastPressTime = currentTime;
+        return true;
+    }
+    return false;
 }
 /*
  * Check if a delay period has passed
@@ -186,13 +200,14 @@ uint32_t PedestrianCtrl_GetCycleCount(void) {
 	return cycleCounter;
 }
 
+/* Add after other includes in pedestrian_ctrl.c */
+
 void pedestrianCtrlTask(void *argument) {
     PedestrianCtrl_Init(); //Initialize task
 
     //Task timing variables
     uint32_t xLastWakeTime = osKernelGetTickCount();
     const uint32_t xTaskPeriod = 10; //10ms per task period
-
     uint32_t xLastBlinkTime = osKernelGetTickCount();
 
     //Main task loop
@@ -205,7 +220,7 @@ void pedestrianCtrlTask(void *argument) {
                 break;
 
             case STATE_WAIT_BUTTON:
-                if (IsButtonPressed()) {
+                if (IsButtonPressedDebounced()) {
                     currentState = STATE_BLINKING_PED;
                     xBlinkStartTime = osKernelGetTickCount();
                     xLastBlinkTime = osKernelGetTickCount();
@@ -254,11 +269,8 @@ void pedestrianCtrlTask(void *argument) {
                 break;
         }
 
-        // EITHER use xLastWakeTime with osDelayUntil:
+        // Use xLastWakeTime with osDelayUntil:
         xLastWakeTime += xTaskPeriod;
         osDelayUntil(xLastWakeTime);
-
-        // OR simpler (but less precise):
-        // osDelay(xTaskPeriod);
     }
 }

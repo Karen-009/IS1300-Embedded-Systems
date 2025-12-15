@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+	extern uint8_t shiftRegData[3];
+
 	typedef enum {
 		LIGHT_RED,
 		LIGHT_ORANGE,
@@ -17,7 +19,6 @@
 
 	typedef enum {
 		STATE_INIT,
-		STATE_CAR_GREEN_PED_RED,
 		STATE_WAIT_BUTTON,
 		STATE_BLINKING_PED,
 		STATE_CAR_ORANGE,
@@ -31,8 +32,6 @@
 		uint32_t walkingDelay; //Time for pedestrian walking
 		uint32_t orangeDelay; // Orange light duration
 	} TrafficConfig_t;
-
-	static uint8_t shiftRegData[3] = {0, 0, 0}; //U1, U2, U3
 
 	#define DEFAULT_TOGGLE_FREQ 500
 	#define DEFAULT_PEDESTRIAN_DELAY 5000
