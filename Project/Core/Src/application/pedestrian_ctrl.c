@@ -11,7 +11,6 @@ Included functions:
 #include "../Inc/config.h"
 #include <stdbool.h>
 #include "spi.h"
-#include "../Inc/config.h"
 
 //Private variables (static for encapsulation)
 
@@ -23,9 +22,9 @@ static TrafficConfig_t config = {
 		.orangeDelay = DEFAULT_ORANGE_DELAY
 };
 
-static TickType_t xBlinkStartTime = 0;
-static TickType_t xOrangeStartTime = 0;
-static TickType_t xWalkingStartTime = 0;
+static uint32_t xBlinkStartTime = 0;
+static uint32_t xOrangeStartTime = 0;
+static uint32_t xWalkingStartTime = 0;
 static uint32_t cycleCounter = 0;
 
 /*Private helper functions
@@ -81,7 +80,6 @@ static void SetPedestrianLight(LightState_t state) {
 
 static void SetCarLight(LightState_t state) {
 	shiftRegData[0]&= ~(BIT_TL1_RED | BIT_TL1_ORANGE | BIT_TL1_GREEN);
-	uint8_t spiData = 0;
 	//Calculate shift register pattern
 	//Assuming: Bit 0-2: vertical, Bit: 3-5: horizontal
 	switch (state) {
@@ -128,10 +126,9 @@ static bool IsButtonPressed(void) {
  * returns true if delay has passed
  */
 
-static bool IsDelayPassed(TickType_t startTime, uint32_t delayMs) {
-    TickType_t currentTime = xTaskGetTickCount();
-    TickType_t delayTicks = pdMS_TO_TICKS(delayMs);
-    return ((currentTime - startTime) >= delayTicks);
+static bool IsDelayPassed(uint32_t startTime, uint32_t delayMs) {
+    uint32_t currentTime = osKernelGetTickCount();  // CMSIS function
+    return ((currentTime - startTime) >= delayMs);  // Direct ms comparison
 }
 
 /*
@@ -189,75 +186,79 @@ uint32_t PedestrianCtrl_GetCycleCount(void) {
 	return cycleCounter;
 }
 
-void pedestrianCtrlTask(void *arguemnt) {
-	PedestrianCtrl_Init(); //Initialize task
+void pedestrianCtrlTask(void *argument) {
+    PedestrianCtrl_Init(); //Initialize task
 
-	//Task timing variables
-	TickType_t xLastWakeTime = xTaskGetTickCount();
-	const TickType_t xTaskPeriod = pdMS_TO_TICKS(10); //10ms per task period
+    //Task timing variables
+    uint32_t xLastWakeTime = osKernelGetTickCount();
+    const uint32_t xTaskPeriod = 10; //10ms per task period
 
-	TickType_t xLastBlinkTime = xTaskGetTickCount(); //Blinking timing variables
+    uint32_t xLastBlinkTime = osKernelGetTickCount();
 
-//Main task loop
-	for(;;) {
-		switch (currentState) {
-		case STATE_INIT: //Initialize State, RS1.1
-			SetPedestrianLight(LIGHT_RED);
-			SetCarLight(LIGHT_GREEN);
-			currentState = STATE_WAIT_BUTTON;
-			break;
+    //Main task loop
+    for(;;) {
+        switch (currentState) {
+            case STATE_INIT:
+                SetPedestrianLight(LIGHT_RED);
+                SetCarLight(LIGHT_GREEN);
+                currentState = STATE_WAIT_BUTTON;
+                break;
 
-		case STATE_WAIT_BUTTON: //Button Pressed?
-			if (IsButtonPressed()) {
-				currentState = STATE_BLINKING_PED;
-				xBlinkStartTime = xTaskGetTickCount();
-				xLastBlinkTime = xTaskGetTickCount();
-			}
-			break;
+            case STATE_WAIT_BUTTON:
+                if (IsButtonPressed()) {
+                    currentState = STATE_BLINKING_PED;
+                    xBlinkStartTime = osKernelGetTickCount();
+                    xLastBlinkTime = osKernelGetTickCount();
+                }
+                break;
 
-		case STATE_BLINKING_PED:
-			if(IsDelayPassed(xLastBlinkTime, config.toggleFreq)) { //RS 1.2: Toggle Pedestrian LED if Button Pressed = yes
-				TogglePedestrianIndicator();
-				xLastBlinkTime = xTaskGetTickCount();
-			}
-			if(IsDelayPassed(xBlinkStartTime, config.pedestrianDelay)) {
-				currentState = STATE_CAR_ORANGE;
-				SetPedestrianLight(LIGHT_OFF); //Stop blinking
-				xOrangeStartTime = xTaskGetTickCount();
-			}
-			break;
+            case STATE_BLINKING_PED:
+                if(IsDelayPassed(xLastBlinkTime, config.toggleFreq)) {
+                    TogglePedestrianIndicator();
+                    xLastBlinkTime = osKernelGetTickCount();
+                }
+                if(IsDelayPassed(xBlinkStartTime, config.pedestrianDelay)) {
+                    currentState = STATE_CAR_ORANGE;
+                    SetPedestrianLight(LIGHT_OFF);
+                    xOrangeStartTime = osKernelGetTickCount();
+                }
+                break;
 
-		case STATE_CAR_ORANGE: //RS 1.6
-			SetCarLight(LIGHT_ORANGE);
+            case STATE_CAR_ORANGE:
+                SetCarLight(LIGHT_ORANGE);
+                if(IsDelayPassed(xOrangeStartTime, config.orangeDelay)) {
+                    currentState = STATE_PED_GREEN_CAR_RED;
+                    xWalkingStartTime = osKernelGetTickCount();
+                }
+                break;
 
-			if(IsDelayPassed(xOrangeStartTime, config.orangeDelay)) {
-				currentState = STATE_PED_GREEN_CAR_RED;
-				xWalkingStartTime = xTaskGetTickCount();
-			}
-			break;
+            case STATE_PED_GREEN_CAR_RED:
+                SetPedestrianLight(LIGHT_GREEN);
+                SetCarLight(LIGHT_RED);
+                if(IsDelayPassed(xWalkingStartTime, config.walkingDelay)) {
+                    currentState = STATE_CAR_ORANGE_2;
+                    xOrangeStartTime = osKernelGetTickCount();
+                }
+                break;
 
-		case STATE_PED_GREEN_CAR_RED: //RS 1.4 and RS 1.5
-			SetPedestrianLight(LIGHT_GREEN);
-			SetCarLight(LIGHT_RED);
+            case STATE_CAR_ORANGE_2:
+                SetCarLight(LIGHT_ORANGE);
+                if(IsDelayPassed(xOrangeStartTime, config.orangeDelay)) {
+                    currentState = STATE_INIT;
+                    cycleCounter++;
+                }
+                break;
 
-			if(IsDelayPassed(xWalkingStartTime, config.walkingDelay)) {
-				currentState = STATE_CAR_ORANGE_2;
-				xOrangeStartTime = xTaskGetTickCount();
-			}
-			break;
+            default:
+                currentState = STATE_INIT;
+                break;
+        }
 
-		case STATE_CAR_ORANGE_2: //RS 1.6
-			SetCarLight(LIGHT_ORANGE);
-			if(IsDelayPassed(xOrangeStartTime, config.orangeDelay)) {
-				currentState = STATE_INIT;
-				cycleCounter++; //Counts the completed cycles
-			}
-			break;
+        // EITHER use xLastWakeTime with osDelayUntil:
+        xLastWakeTime += xTaskPeriod;
+        osDelayUntil(xLastWakeTime);
 
-		default: //Should ideally never happen
-			currentState = STATE_INIT;
-			break;
-		}
-		vTaskDelayUntil(&xLastWakeTime, xTaskPeriod); //Maintain fixed task period of 10ms
-	}
+        // OR simpler (but less precise):
+        // osDelay(xTaskPeriod);
+    }
 }

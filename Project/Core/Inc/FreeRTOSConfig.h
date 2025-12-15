@@ -103,7 +103,6 @@
 #define configUSE_OS2_THREAD_FLAGS           1
 #define configUSE_OS2_TIMER                  1
 #define configUSE_OS2_MUTEX                  1
-#define configUSE_HEAP_SCHEME 4
 
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */
