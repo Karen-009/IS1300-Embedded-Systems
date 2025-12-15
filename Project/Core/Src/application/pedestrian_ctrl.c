@@ -10,7 +10,7 @@ Included functions:
 #include <string.h>
 #include "../Inc/config.h"
 #include <stdbool.h>
-#include "spi.h"
+#include "../Inc/spi.h"
 #include "usart.h"
 
 //Private variables (static for encapsulation)
@@ -42,7 +42,29 @@ static uint32_t cycleCounter = 0;
 }*/
 
 static void UpdateShiftRegisters(void) {
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+	    HAL_StatusTypeDef status;
+
+	    // 1. Latch LOW before shifting
+	    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);  // STCP = LOW
+
+	    // 2. Send data via SPI - ALL 3 BYTES in ONE transmission
+	    uint8_t spiData[3] = {shiftRegData[2], shiftRegData[1], shiftRegData[0]};
+
+	    // Try with HAL_SPI_Transmit for all 3 bytes at once
+	    status = HAL_SPI_Transmit(&hspi3, spiData, 3, HAL_MAX_DELAY);
+
+	    if(status != HAL_OK) {
+	        // SPI error - blink LD2 to indicate error
+	        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+	        return;
+	    }
+
+	    // 3. Latch HIGH to update outputs
+	    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);  // STCP = HIGH
+
+	    // Small delay to ensure shift register latches
+	    osDelay(1);
+    /*HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
 
     // Send data
     HAL_SPI_Transmit(&hspi3, &shiftRegData[2], 1, HAL_MAX_DELAY);
@@ -53,6 +75,7 @@ static void UpdateShiftRegisters(void) {
 
     // Small delay to ensure shift register latches the data
     HAL_Delay(1);  // Or use a smaller delay with HAL_Delay_us() if available
+    */
 }
 
 static void SetPedestrianLight(LightState_t state) {
@@ -157,19 +180,25 @@ void PedestrianCtrl_Init(void) {
 	//Initialize shift register data
 	memset(shiftRegData, 0, sizeof(shiftRegData));
 
-	//Set initial lights(RS 1.1)
-	SetPedestrianLight(LIGHT_RED);
-	SetCarLight(LIGHT_GREEN);
+	    // Initialize shift registers with YOUR pins:
+	    // 1. Release reset (MR# = HIGH = PC9)
+	    HAL_GPIO_WritePin(Reset_GPIO_Port, Reset_Pin, GPIO_PIN_SET);
 
-	//Initialize timers
-	xBlinkStartTime = 0;
-	xOrangeStartTime = 0;
-	xWalkingStartTime = 0;
+	    // 2. Enable outputs (OE# = LOW = PC7)
+	    HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET);
 
-	//Enables shift register output, OE
-	HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET);
-	//Release shift register reset, MR
-	HAL_GPIO_WritePin(Reset_GPIO_Port, Reset_Pin, GPIO_PIN_SET);
+	    // 3. Clear all outputs
+	    UpdateShiftRegisters();
+	    osDelay(10);
+
+	    // 4. Set initial lights
+	    SetPedestrianLight(LIGHT_RED);
+	    SetCarLight(LIGHT_GREEN);
+
+	    // Initialize timers
+	    xBlinkStartTime = 0;
+	    xOrangeStartTime = 0;
+	    xWalkingStartTime = 0;
 
 }
 
@@ -199,10 +228,14 @@ const char* PedestrianCtrl_GetStateString(PedestrianState_t state) {
 uint32_t PedestrianCtrl_GetCycleCount(void) {
 	return cycleCounter;
 }
-
+#define LD2_Pin GPIO_PIN_5
+#define LD2_GPIO_Port GPIOA
 /* Add after other includes in pedestrian_ctrl.c */
 
 void pedestrianCtrlTask(void *argument) {
+
+	//Enables shift register output, OE
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
     PedestrianCtrl_Init(); //Initialize task
 
     //Task timing variables
@@ -274,3 +307,4 @@ void pedestrianCtrlTask(void *argument) {
         osDelayUntil(xLastWakeTime);
     }
 }
+

@@ -58,7 +58,7 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t pedestrianCtrlHandle;
 const osThreadAttr_t pedestrianCtrl_attributes = {
   .name = "pedestrianCtrl",
-  .stack_size = 256 * 4,
+  .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 
@@ -143,12 +143,41 @@ void StartDefaultTask(void *argument)
 void StartTask02(void *argument)
 {
   /* USER CODE BEGIN StartTask02 */
-  /* Infinite loop */
-  for(;;)
-  {
-	  void pedestrianCtrlTask(void *argument);
 
+  MX_SPI3_Init();
+  HAL_GPIO_WritePin(Reset_GPIO_Port, Reset_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET);
+  osDelay(100);
+
+  // Diagnostic: Test each bit one by one
+  for(uint8_t bit = 0; bit < 8; bit++) {
+      // Turn on only this bit
+      uint8_t pattern = (1 << bit);
+
+      HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+      uint8_t spiData[3] = {0x00, 0x00, pattern};
+      HAL_SPI_Transmit(&hspi3, spiData, 3, 100);
+      HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+
+      // Blink LD2 to show which bit we're testing
+      for(int i = 0; i <= bit; i++) {
+          HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+          osDelay(200);
+      }
+
+      osDelay(2000); // Wait 2 seconds to see which LED lights up
   }
+
+  // Turn all off
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t offData[3] = {0x00, 0x00, 0x00};
+  HAL_SPI_Transmit(&hspi3, offData, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+
+  while(1) {
+      osDelay(1000);
+  }
+
   /* USER CODE END StartTask02 */
 }
 
