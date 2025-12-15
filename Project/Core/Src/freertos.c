@@ -35,6 +35,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+extern SPI_HandleTypeDef hspi3;
 
 /* USER CODE END PD */
 
@@ -144,37 +145,179 @@ void StartTask02(void *argument)
 {
   /* USER CODE BEGIN StartTask02 */
 
+  // Initialize SPI
   MX_SPI3_Init();
-  HAL_GPIO_WritePin(Reset_GPIO_Port, Reset_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET);
+
+  // LD2 blink 3 times - show task started
+  for(int i = 0; i < 3; i++) {
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      osDelay(200);
+  }
+  osDelay(500);
+
+  // CORRECT SHIFT REGISTER INITIALIZATION:
+  // MR# = PA7 = HIGH (release reset)
+  // OE# = PC7 = LOW (enable outputs)
+  HAL_GPIO_WritePin(Reset_GPIO_Port, Reset_Pin, GPIO_PIN_SET);     // PA7 HIGH
+  HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET); // PC7 LOW
   osDelay(100);
 
-  // Diagnostic: Test each bit one by one
-  for(uint8_t bit = 0; bit < 8; bit++) {
-      // Turn on only this bit
-      uint8_t pattern = (1 << bit);
-
-      HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
-      uint8_t spiData[3] = {0x00, 0x00, pattern};
-      HAL_SPI_Transmit(&hspi3, spiData, 3, 100);
-      HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
-
-      // Blink LD2 to show which bit we're testing
-      for(int i = 0; i <= bit; i++) {
-          HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-          osDelay(200);
-      }
-
-      osDelay(2000); // Wait 2 seconds to see which LED lights up
-  }
-
-  // Turn all off
+  // === TEST 1: ALL LEDs ON ===
+  // Clear all first
   HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
-  uint8_t offData[3] = {0x00, 0x00, 0x00};
-  HAL_SPI_Transmit(&hspi3, offData, 3, 100);
+  uint8_t clearData[3] = {0x00, 0x00, 0x00};
+  HAL_SPI_Transmit(&hspi3, clearData, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+  osDelay(1000);
+
+  // Turn ALL LEDs ON
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t allOnData[3] = {0xFF, 0xFF, 0xFF};
+  HAL_SPI_Transmit(&hspi3, allOnData, 3, 100);
   HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
 
+  // LD2 ON solid for 3 seconds while ALL LEDs should be ON
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  osDelay(3000);
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+
+  // === TEST 2: TEST EACH LED SEPARATELY ===
+
+  // Test Car RED (bit 0)
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t test1[3] = {0x00, 0x00, 0x01}; // BIT_TL1_RED
+  HAL_SPI_Transmit(&hspi3, test1, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+  // LD2: 1 blink
+  for(int i = 0; i < 2; i++) {
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      osDelay(300);
+  }
+  osDelay(2000);
+
+  // Test Car ORANGE (bit 1)
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t test2[3] = {0x00, 0x00, 0x02}; // BIT_TL1_ORANGE
+  HAL_SPI_Transmit(&hspi3, test2, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+  // LD2: 2 blinks
+  for(int i = 0; i < 4; i++) {
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      osDelay(200);
+  }
+  osDelay(2000);
+
+  // Test Car GREEN (bit 2)
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t test3[3] = {0x00, 0x00, 0x04}; // BIT_TL1_GREEN
+  HAL_SPI_Transmit(&hspi3, test3, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+  // LD2: 3 blinks
+  for(int i = 0; i < 6; i++) {
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      osDelay(150);
+  }
+  osDelay(2000);
+
+  // Test Pedestrian RED (bit 3)
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t test4[3] = {0x00, 0x00, 0x08}; // BIT_PL1_RED
+  HAL_SPI_Transmit(&hspi3, test4, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+  // LD2: 4 blinks
+  for(int i = 0; i < 8; i++) {
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      osDelay(150);
+  }
+  osDelay(2000);
+
+  // Test Pedestrian GREEN (bit 4)
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t test5[3] = {0x00, 0x00, 0x10}; // BIT_PL1_GREEN
+  HAL_SPI_Transmit(&hspi3, test5, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+  // LD2: 5 blinks
+  for(int i = 0; i < 10; i++) {
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      osDelay(120);
+  }
+  osDelay(2000);
+
+  // Test Pedestrian BLUE (bit 5)
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t test6[3] = {0x00, 0x00, 0x20}; // BIT_PL1_BLUE
+  HAL_SPI_Transmit(&hspi3, test6, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+  // LD2: 6 blinks
+  for(int i = 0; i < 12; i++) {
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      osDelay(100);
+  }
+  osDelay(2000);
+
+  // === TEST 3: INITIAL STATE (Pedestrian RED + Car GREEN) ===
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t initialState[3] = {0x00, 0x00, 0x08 | 0x04}; // Bits 3 + 2
+  HAL_SPI_Transmit(&hspi3, initialState, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+  // LD2: Solid ON for 3 seconds
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  osDelay(3000);
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+
+  // === TEST 4: WALKING STATE (Pedestrian GREEN + Car RED) ===
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t walkingState[3] = {0x00, 0x00, 0x10 | 0x01}; // Bits 4 + 0
+  HAL_SPI_Transmit(&hspi3, walkingState, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+  // LD2: 3 fast blinks
+  for(int i = 0; i < 6; i++) {
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      osDelay(150);
+  }
+  osDelay(2000);
+
+  // === TEST 5: WARNING STATE (Car ORANGE only) ===
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t warningState[3] = {0x00, 0x00, 0x02}; // Bit 1
+  HAL_SPI_Transmit(&hspi3, warningState, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+  // LD2: 2 medium blinks
+  for(int i = 0; i < 4; i++) {
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+      osDelay(250);
+  }
+  osDelay(2000);
+
+  // === FINAL: ALL LEDs BLINK 3 TIMES ===
+  for(int blink = 0; blink < 3; blink++) {
+      // All ON
+      HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+      uint8_t blinkOn[3] = {0xFF, 0xFF, 0xFF};
+      HAL_SPI_Transmit(&hspi3, blinkOn, 3, 100);
+      HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+      osDelay(500);
+
+      // All OFF
+      HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+      uint8_t blinkOff[3] = {0x00, 0x00, 0x00};
+      HAL_SPI_Transmit(&hspi3, blinkOff, 3, 100);
+      HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+      osDelay(500);
+  }
+
+  // === SET READY STATE ===
+  // Initial state for pedestrian control
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
+  uint8_t readyState[3] = {0x00, 0x00, 0x08 | 0x04}; // Ped RED + Car GREEN
+  HAL_SPI_Transmit(&hspi3, readyState, 3, 100);
+  HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
+
+  // LD2 slow blink forever = ready
   while(1) {
+      HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
       osDelay(1000);
   }
 
