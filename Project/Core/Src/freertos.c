@@ -187,7 +187,6 @@ osKernelInitialize();
   /* creation of carSensorEvent */
   carSensorEventHandle = osEventFlagsNew(&carSensorEvent_attributes);
 
-
   /* USER CODE BEGIN RTOS_EVENTS */
   dirVerticalEvents = dirVerticalEventsHandle;
   dirHorizontalEvents = dirHorizontalEventsHandle;
