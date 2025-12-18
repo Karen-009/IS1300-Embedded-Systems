@@ -221,6 +221,10 @@ LightState_t carLightStates[4];
 	            break;
 
 	        case LIGHT_RED:
+				if (events & DIR_EVENT_REQUEST_STOP) {
+			        osEventFlagsSet(dirVerticalEvents, DIR_EVENT_IS_STOP);
+			        osEventFlagsClear(dirVerticalEvents, DIR_EVENT_REQUEST_STOP);
+			    }
 	            if (events & DIR_EVENT_REQUEST_GO) {
 	                verticalLightState = LIGHT_ORANGE;
 	                SetDirectionLights(DIR_VERTICAL, LIGHT_ORANGE);
@@ -258,6 +262,11 @@ LightState_t carLightStates[4];
 	        case LIGHT_ORANGE:
 	            break;
 	        case LIGHT_RED:
+				if (events & DIR_EVENT_REQUEST_STOP) {
+			        // Lights are already red - immediately signal IS_STOP
+			        osEventFlagsSet(dirVerticalEvents, DIR_EVENT_IS_STOP);
+			        osEventFlagsClear(dirVerticalEvents, DIR_EVENT_REQUEST_STOP);
+			    }
 	            if (events & DIR_EVENT_REQUEST_GO) {
 	            	horizontalLightState = LIGHT_ORANGE;
 	            	SetDirectionLights(DIR_HORIZONTAL, LIGHT_ORANGE);
