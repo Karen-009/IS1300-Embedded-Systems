@@ -26,6 +26,7 @@
 		STATE_CAR_RED,
 		STATE_CAR_ORANGE_2,
 		STATE_WAIT_CAR_ORANGE,
+		STATE_WAIT_CAR_TRANSITION
 	} PedestrianState_t;
 
 	//States for pedestrian crossing in task 1
