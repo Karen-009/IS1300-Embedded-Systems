@@ -29,8 +29,26 @@
 	    .walkingDelay = DEFAULT_WALKING_DELAY
 	};
 
+	osEventFlagsId_t pedEventFlags;
+	osEventFlagsId_t dirVerticalEvents = NULL;
+	osEventFlagsId_t dirHorizontalEvents = NULL;
+	osEventFlagsId_t shiftRegMutex = NULL;
+
+	uint32_t currentRedWaitTime = 0;
+	uint32_t greenStartTime = 0;
+
+	osSemaphoreId_t pedCrossingSemaphore = NULL;
+	osEventFlagsId_t carSensorEvents = NULL;
+
+	LightState_t verticalLightState = LIGHT_GREEN;
+	LightState_t horizontalLightState = LIGHT_RED;
+	CarState_t currentCarState = STATE_ACTIVE_V;
+
 	void UpdateShiftRegisters(void) {
 
+		if(shiftRegMutex != NULL) {
+			osMutexAcquire(shiftRegMutex, osWaitForever);
+		}
 	    HAL_StatusTypeDef status;
 	    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);  // STCP = LOW
 	    uint8_t spiData[3] = {shiftRegData[2], shiftRegData[1], shiftRegData[0]};
@@ -42,6 +60,11 @@
 
 	    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);  // STCP = HIGH
 	    osDelay(1); // Small delay to ensure shift register latches
+
+		if(shiftRegMutex != NULL) {
+			osMutexRelease(shiftRegMutex);
+		}
+		osDelay(1);
 	}
 
 	//Function to set the car lane LEDs
@@ -67,9 +90,8 @@
 					case LIGHT_GREEN:	shiftRegData[1] |= BIT_TL_GREEN;	break;
 					default:	break;
 				}
-				carLightState[lane-1] = state;
-
 				break;
+
 			case LANE_3: //Shift register 3
 				shiftRegData[2] &= ~(BIT_TL3_RED | BIT_TL3_ORANGE | BIT_TL3_GREEN);
 				switch(state) {
@@ -78,7 +100,6 @@
 					case LIGHT_GREEN:	shiftRegData[2] |= BIT_TL3_GREEN;	break;
 					default:	break;
 				}
-				carLightState[2] = state;
 				break;
 
 			case LANE_4: //Shift register 3
@@ -89,7 +110,6 @@
 					case LIGHT_GREEN:	shiftRegData[2] |= BIT_TL_GREEN;	break;
 					default:	break;
 				}
-				carLightState[3] = state;
 				break;
 			}
 			UpdateShiftRegisters();
@@ -232,10 +252,27 @@
 	    }
 	}
 
-	osEventFlagsId_t pedEventFlags;
-	osEventFlagsId_t dirVerticalEvents = NULL;
-	osEventFlagsId_t dirHorizontalEvents = NULL;
+	//Task 3
+	bool CanTurnRight(TrafficLane_t lane) {
+	    /* R3.5: A car is allowed to turn right when a crossing on the right lane is green */
+	    switch(lane) {
+	        case LANE_1:  // Lane 2 -> turning right lane 4
+	            // Check if the crossing to the right (horizontal direction) is green
+	            return (GetCarLaneState(LANE_2) == LIGHT_GREEN || GetCarLaneState(LANE_4) == LIGHT_GREEN);
 
-	uint32_t currentRedWaitTime = 0;
-	uint32_t greenStartTime = 0;
+	        case LANE_2:  // Lane 1 -> turning right to lane 3
+	            // Check if the crossing to the right (vertical direction) is green
+	            return (GetCarLaneState(LANE_1) == LIGHT_GREEN || GetCarLaneState(LANE_3) == LIGHT_GREEN);
 
+	        case LANE_3:  // Lane2 -> turning right to lane4
+	            // Check if the crossing to the right (horizontal direction) is green
+	            return (GetCarLaneState(LANE_2) == LIGHT_GREEN || GetCarLaneState(LANE_4) == LIGHT_GREEN);
+
+	        case LANE_4:  // Lan 1 -> turning right to Lane 3
+	            // Check if the crossing to the right (vertical direction) is green
+	            return (GetCarLaneState(LANE_1) == LIGHT_GREEN || GetCarLaneState(LANE_3) == LIGHT_GREEN);
+
+	        default:
+	            return false;
+	    }
+	}

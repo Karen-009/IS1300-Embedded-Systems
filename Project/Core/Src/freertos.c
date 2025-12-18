@@ -27,7 +27,13 @@
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
-
+#include "../Inc/config.h"
+#include "main.h"
+#include "../Inc/application/pedestrian_ctrl.h"
+#include "../Inc/application/car_ctrl.h"
+#include "main.h" //HAL definitions
+#include "cmsis_os2.h" //osDelay (CMSIS-RTOS v2)
+#include "../Inc/spi.h"
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
@@ -59,8 +65,25 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t pedestrianCtrlHandle;
 const osThreadAttr_t pedestrianCtrl_attributes = {
   .name = "pedestrianCtrl",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for carCtrl */
+osThreadId_t carCtrlHandle;
+const osThreadAttr_t carCtrl_attributes = {
+  .name = "carCtrl",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for shiftRegMutex */
+osMutexId_t shiftRegMutexHandle;
+const osMutexAttr_t shiftRegMutex_attributes = {
+  .name = "shiftRegMutex"
+};
+/* Definitions for pedCrossingSemaphore */
+osSemaphoreId_t pedCrossingSemaphoreHandle;
+const osSemaphoreAttr_t pedCrossingSemaphore_attributes = {
+  .name = "pedCrossingSemaphore"
 };
 /* Definitions for dirVerticalEvents */
 osEventFlagsId_t dirVerticalEventsHandle;
@@ -77,6 +100,11 @@ osEventFlagsId_t pedEventFlagsHandle;
 const osEventFlagsAttr_t pedEventFlags_attributes = {
   .name = "pedEventFlags"
 };
+/* Definitions for carSensorEvent */
+osEventFlagsId_t carSensorEventHandle;
+const osEventFlagsAttr_t carSensorEvent_attributes = {
+  .name = "carSensorEvent"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -85,6 +113,7 @@ const osEventFlagsAttr_t pedEventFlags_attributes = {
 
 void StartDefaultTask(void *argument);
 void StartTask02(void *argument);
+void StartTask03(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -97,13 +126,20 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
+  /* Create the mutex(es) */
+  /* creation of shiftRegMutex */
+  shiftRegMutexHandle = osMutexNew(&shiftRegMutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
+  shiftRegMutex = shiftRegMutexHandle;
   /* USER CODE END RTOS_MUTEX */
 
+  /* Create the semaphores(s) */
+  /* creation of pedCrossingSemaphore */
+  pedCrossingSemaphoreHandle = osSemaphoreNew(1, 1, &pedCrossingSemaphore_attributes);
+
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
+  pedCrossingSemaphore = pedCrossingSemaphoreHandle;
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -121,20 +157,25 @@ void MX_FREERTOS_Init(void) {
   /* creation of pedestrianCtrl */
   pedestrianCtrlHandle = osThreadNew(StartTask02, NULL, &pedestrianCtrl_attributes);
 
+  /* creation of carCtrl */
+  carCtrlHandle = osThreadNew(StartTask03, NULL, &carCtrl_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
-  /* Create the event(s) */
   /* creation of dirVerticalEvents */
   dirVerticalEventsHandle = osEventFlagsNew(&dirVerticalEvents_attributes);
-
+  dirVerticalEvents = dirVerticalEventsHandle;
   /* creation of dirHorizontalEvents */
   dirHorizontalEventsHandle = osEventFlagsNew(&dirHorizontalEvents_attributes);
-
+  dirHorizontalEvents = dirHorizontalEventsHandle;
   /* creation of pedEventFlags */
   pedEventFlagsHandle = osEventFlagsNew(&pedEventFlags_attributes);
-
+  pedEventFlags = pedEventFlagsHandle;
+  /* creation of carSensorEvent */
+  carSensorEventHandle = osEventFlagsNew(&carSensorEvent_attributes);
+  carSensorEvents = carSensorEventHandle;
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
@@ -171,6 +212,21 @@ void StartTask02(void *argument)
   /* USER CODE BEGIN StartTask02 */
 	pedestrianCtrlTask(argument);
   /* USER CODE END StartTask02 */
+}
+
+/* USER CODE BEGIN Header_StartTask03 */
+/**
+* @brief Function implementing the carCtrlTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTask03 */
+void StartTask03(void *argument)
+{
+  /* USER CODE BEGIN StartTask03 */
+  /* Infinite loop */
+	carCtrlTask(argument);
+  /* USER CODE END StartTask03 */
 }
 
 /* Private application code --------------------------------------------------*/

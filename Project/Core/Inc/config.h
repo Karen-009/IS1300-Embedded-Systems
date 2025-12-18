@@ -7,16 +7,6 @@
 #include <stdbool.h>
 #include "cmsis_os2.h" //osDelay (CMSIS-RTOS v2)
 
-
-	extern uint8_t shiftRegData[3];
-	extern uint32_t lastPressTime1;
-	extern uint32_t lastPressTime2;
-	extern const uint32_t debounceDelay;
-
-
-	extern uint32_t currentRedWaitTime;
-	extern uint32_t greenStartTime;
-
 	//All possible states of LEDs
 	typedef enum {
 		LIGHT_RED,
@@ -86,6 +76,8 @@
 	    STATE_TRANSITION_H //MAIN_STATE_TRANSITION_H
 	} CarState_t; //MainState_t
 
+	extern TrafficConfig_t config;
+
 	//Definition of Delay & toggle values
 	#define DEFAULT_TOGGLE_FREQ 500
 	#define DEFAULT_PEDESTRIAN_DELAY 5000
@@ -119,6 +111,8 @@
 	bool AreCrossingCarLights(TrafficDirection_t crossingDir, LightState_t state);
 	bool CanPedestrianCross(PedestrianCrossing_t crossing);
 	bool AreCrossingCarLight(PedestrianCrossing_t crossing, LightState_t state);
+	bool CanTurnRight(TrafficLane_t lane);
+
 
 	extern osEventFlagsId_t pedEventFlags;
 	extern osEventFlagsId_t dirVerticalEvents;
@@ -132,5 +126,28 @@
 	#define PED_EVENT_REQUEST_2      (1U << 1)
 	#define PED_EVENT_TIMEOUT_1      (1U << 2)
 	#define PED_EVENT_TIMEOUT_2      (1U << 3)
+
+	extern uint8_t shiftRegData[3];
+	extern uint32_t lastPressTime1;
+	extern uint32_t lastPressTime2;
+	extern const uint32_t debounceDelay;
+
+
+	extern uint32_t currentRedWaitTime;
+	extern uint32_t greenStartTime;
+
+	extern osMutexId_t shiftRegMutex;
+	extern osSemaphoreId_t pedCrossingSemaphore;
+	extern osEventFlagsId_t carSensorEvents;
+
+	extern LightState_t verticalLightState;
+	extern LightState_t horizontalLightState;
+	extern CarState_t currentCarState;
+
+	//Adding new event flag to the sensor
+	#define CAR_SENSOR_1_EVENT  (1U << 4)
+	#define CAR_SENSOR_2_EVENT  (1U << 5)
+	#define CAR_SENSOR_3_EVENT  (1U << 6)
+	#define CAR_SENSOR_4_EVENT  (1U << 7)
 
 #endif

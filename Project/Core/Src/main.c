@@ -93,7 +93,24 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
+  // Initialize shift register control pins
+  HAL_GPIO_WritePin(Reset_GPIO_Port, Reset_Pin, GPIO_PIN_SET);     // Release reset (active LOW)
+  HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET); // Enable outputs (active LOW)
+  osDelay(100); // Wait for shift registers to stabilize
 
+  // Initial LED test sequence
+  SetAllCarLights(LIGHT_RED);
+  osDelay(500);
+  SetAllCarLights(LIGHT_GREEN);
+  osDelay(500);
+
+  // Set initial pedestrian lights
+  SetSinglePedestrianLight(PED_CROSSING_1, LIGHT_RED);
+  SetSinglePedestrianLight(PED_CROSSING_2, LIGHT_RED);
+
+  // Optional: Send startup message via UART
+  uint8_t startupMsg[] = "Task 3 System Started\r\n";
+  HAL_UART_Transmit(&huart2, startupMsg, sizeof(startupMsg)-1, 100);
   /* USER CODE BEGIN 2 */
   /* USER CODE BEGIN 2 */
 
@@ -171,6 +188,45 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    uint32_t currentTime = HAL_GetTick();
+    static uint32_t lastPed1Time = 0;
+    static uint32_t lastPed2Time = 0;
+
+    switch(GPIO_Pin) {
+        case PA15_Pin: // Pedestrian Button 1
+            if ((currentTime - lastPed1Time) > 20) {
+                if (HAL_GPIO_ReadPin(PA15_GPIO_Port, PA15_Pin) == GPIO_PIN_RESET) {
+                    // Button pressed
+                    if (pedEventFlags != NULL) {
+                        osEventFlagsSet(pedEventFlags, PED_EVENT_REQUEST_1);
+                    }
+                }
+                lastPed1Time = currentTime;
+            }
+            break;
+
+        case PB7_Pin: // Pedestrian Button 2
+            if ((currentTime - lastPed2Time) > 20) {
+                if (HAL_GPIO_ReadPin(PB7_GPIO_Port, PB7_Pin) == GPIO_PIN_RESET) {
+                    // Button pressed
+                    if (pedEventFlags != NULL) {
+                        osEventFlagsSet(pedEventFlags, PED_EVENT_REQUEST_2);
+                    }
+                }
+                lastPed2Time = currentTime;
+            }
+            break;
+
+        // Car sensors are handled by polling
+        case SW1_Pin:
+        case SW2_Pin:
+        case SW3_Pin:
+        case SW4_Pin:
+            break;
+    }
+}
 
 /* USER CODE END 4 */
 
