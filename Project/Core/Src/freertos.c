@@ -132,6 +132,7 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
+osKernelInitialize();
   /* USER CODE END Init */
   /* Create the mutex(es) */
   /* creation of shiftRegMutex */
@@ -209,7 +210,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-
+	  osDelay(1);
   }
   /* USER CODE END StartDefaultTask */
 }
@@ -227,6 +228,7 @@ void StartTask02(void *argument)
 	  for(;;)
 	  {
 		pedestrianCtrlTask(argument);
+		osDelay(50);
 	  }
   /* USER CODE END StartTask02 */
 }
@@ -243,6 +245,7 @@ void StartTask03(void *argument)
   /* USER CODE BEGIN StartTask03 */
   for(;;) {
 	carCtrlTask(argument);
+	osDelay(50);
   }
   /* USER CODE END StartTask03 */
 }
@@ -261,6 +264,9 @@ void StartTask04(void *argument)
   for(;;)
   {
 	  Task3_Coordinator();
+	  osDelay(50);
+
+
   }
   /* USER CODE END StartTask04 */
 }

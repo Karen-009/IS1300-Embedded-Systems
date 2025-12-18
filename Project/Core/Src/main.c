@@ -25,7 +25,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "application/pedestrian_ctrl.h"
+#include "../Inc/application/pedestrian_ctrl.h"
+#include "../Inc/application/car_ctrl.h"
+#include "../Inc/config.h"
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,11 +50,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-extern osEventFlagsId_t pedEventFlags;
-extern osEventFlagsId_t dirVerticalEvents;
-extern osEventFlagsId_t dirHorizontalEvents;
-extern osMutexId_t shiftRegMutex;
-extern osSemaphoreId_t pedCrossingSemaphore;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,17 +97,8 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
-  // Initialize shift register control pins
-  HAL_GPIO_WritePin(Reset_GPIO_Port, Reset_Pin, GPIO_PIN_SET);     // Release reset (active LOW)
-  HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET); // Enable outputs (active LOW)
-  osDelay(100);
 
-  SetSinglePedestrianLight(PED_CROSSING_1, LIGHT_RED);
-  SetSinglePedestrianLight(PED_CROSSING_2, LIGHT_RED);
-  SetCarLaneLight(1, LIGHT_RED);//Vertival
-  SetCarLaneLight(2, LIGHT_GREEN);//Horizontal
-  SetCarLaneLight(3, LIGHT_GREEN); //Horizontal
-  SetCarLaneLight(4, LIGHT_RED);//Vertical
+  /* USER CODE BEGIN 2 */
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -184,45 +175,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    uint32_t currentTime = HAL_GetTick();
-    static uint32_t lastPed1Time = 0;
-    static uint32_t lastPed2Time = 0;
-
-    switch(GPIO_Pin) {
-        case PA15_Pin: // Pedestrian Button 1
-            if ((currentTime - lastPed1Time) > 20) {
-                if (HAL_GPIO_ReadPin(PA15_GPIO_Port, PA15_Pin) == GPIO_PIN_RESET) {
-                    // Button pressed
-                    if (pedEventFlags != NULL) {
-                        osEventFlagsSet(pedEventFlags, PED_EVENT_REQUEST_1);
-                    }
-                }
-                lastPed1Time = currentTime;
-            }
-            break;
-
-        case PB7_Pin: // Pedestrian Button 2
-            if ((currentTime - lastPed2Time) > 20) {
-                if (HAL_GPIO_ReadPin(PB7_GPIO_Port, PB7_Pin) == GPIO_PIN_RESET) {
-                    // Button pressed
-                    if (pedEventFlags != NULL) {
-                        osEventFlagsSet(pedEventFlags, PED_EVENT_REQUEST_2);
-                    }
-                }
-                lastPed2Time = currentTime;
-            }
-            break;
-
-        // Car sensors are handled by polling
-        case SW1_Pin:
-        case SW2_Pin:
-        case SW3_Pin:
-        case SW4_Pin:
-            break;
-    }
-}
 
 /* USER CODE END 4 */
 
