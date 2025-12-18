@@ -22,18 +22,13 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
+#include "../Inc/config.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
-#include "../Inc/config.h"
-#include "main.h"
-#include "../Inc/application/pedestrian_ctrl.h"
-#include "../Inc/application/car_ctrl.h"
-#include "main.h" //HAL definitions
-#include "cmsis_os2.h" //osDelay (CMSIS-RTOS v2)
-#include "../Inc/spi.h"
+
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
@@ -166,16 +161,16 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of dirVerticalEvents */
   dirVerticalEventsHandle = osEventFlagsNew(&dirVerticalEvents_attributes);
-  dirVerticalEvents = dirVerticalEventsHandle;
+
   /* creation of dirHorizontalEvents */
   dirHorizontalEventsHandle = osEventFlagsNew(&dirHorizontalEvents_attributes);
-  dirHorizontalEvents = dirHorizontalEventsHandle;
+
   /* creation of pedEventFlags */
   pedEventFlagsHandle = osEventFlagsNew(&pedEventFlags_attributes);
-  pedEventFlags = pedEventFlagsHandle;
+
   /* creation of carSensorEvent */
   carSensorEventHandle = osEventFlagsNew(&carSensorEvent_attributes);
-  carSensorEvents = carSensorEventHandle;
+
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
@@ -195,7 +190,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+
   }
   /* USER CODE END StartDefaultTask */
 }
@@ -210,8 +205,11 @@ void StartDefaultTask(void *argument)
 void StartTask02(void *argument)
 {
   /* USER CODE BEGIN StartTask02 */
-	pedestrianCtrlTask(argument);
-  /* USER CODE END StartTask02 */
+	  for(;;)
+	  {
+		pedestrianCtrlTask(argument);
+	  }
+	  /* USER CODE END StartTask02 */
 }
 
 /* USER CODE BEGIN Header_StartTask03 */

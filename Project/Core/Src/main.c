@@ -98,20 +98,10 @@ int main(void)
   HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET); // Enable outputs (active LOW)
   osDelay(100); // Wait for shift registers to stabilize
 
-  // Initial LED test sequence
-  SetAllCarLights(LIGHT_RED);
-  osDelay(500);
-  SetAllCarLights(LIGHT_GREEN);
-  osDelay(500);
-
-  // Set initial pedestrian lights
-  SetSinglePedestrianLight(PED_CROSSING_1, LIGHT_RED);
-  SetSinglePedestrianLight(PED_CROSSING_2, LIGHT_RED);
 
   // Optional: Send startup message via UART
   uint8_t startupMsg[] = "Task 3 System Started\r\n";
   HAL_UART_Transmit(&huart2, startupMsg, sizeof(startupMsg)-1, 100);
-  /* USER CODE BEGIN 2 */
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */

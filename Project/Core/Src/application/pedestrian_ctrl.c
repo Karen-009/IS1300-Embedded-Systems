@@ -102,44 +102,33 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 			break;
 
 		case STATE_BLINKING_PED:
-		    if(cross->buttonPressed && IsDelayPassed(cross->lastBlinkTime, config.toggleFreq)) {
+		    // Continue blinking while waiting
+		    if (IsDelayPassed(cross->lastBlinkTime, config.toggleFreq)) {
 		        TogglePedestrianIndicator(crossing);
 		        cross->lastBlinkTime = osKernelGetTickCount();
 		    }
-		    if(IsDelayPassed(cross->blinkStartTime, config.pedestrianDelay)){
-		        // R3.3: Try to acquire pedestrian crossing semaphore
+
+		    // Check if pedestrian delay has passed
+		    if (IsDelayPassed(cross->blinkStartTime, config.pedestrianDelay)) {
+		        // Try to acquire pedestrian crossing semaphore
 		        if (pedCrossingSemaphore != NULL &&
 		            osSemaphoreAcquire(pedCrossingSemaphore, 0) == osOK) {
-		            //Got semaphore - can proceed
-		            if (crossing == PED_CROSSING_1) {
-		                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_1);
-		            } else {
-		                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_2);
-		            }
-		            if(CanPedestrianCross(crossing)) {
-		                cross->state = STATE_CAR_RED;
-		                SetSinglePedestrianLight(crossing, LIGHT_OFF);
-		                if (crossing == PED_CROSSING_1) {
-		                    osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
-		                } else {
-		                    osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
-		                }
-		            }
-
+		            // Got semaphore - can proceed to change car lights
 		            cross->state = STATE_CAR_ORANGE_TO_RED;
-		            SetSinglePedestrianLight(crossing, LIGHT_OFF);
 		            cross->orangeStartTime = osKernelGetTickCount();
+		            SetSinglePedestrianLight(crossing, LIGHT_OFF);
 		            SetCrossingCarLights(crossing, LIGHT_ORANGE);
 
-		        } else {
-		            static uint32_t waitCounter = 0;
-		            waitCounter++;
-		            if (waitCounter > 100) {
-		                cross->state = STATE_WAIT_BUTTON;
-		                cross->buttonPressed = false;
-		                SetSinglePedestrianLight(crossing, LIGHT_RED);
-		                waitCounter = 0;
+		            // Clear the request flag since we're handling it
+		            if (crossing == PED_CROSSING_1) {
+		                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
+		            } else {
+		                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
 		            }
+		        } else {
+		            // Can't get semaphore - another crossing is active
+		            // Just keep blinking and waiting
+		            // Optionally, you could set a timeout here
 		        }
 		    }
 		    break;
@@ -210,8 +199,14 @@ void PedestrianCtrl_Init(void) {
 	    osDelay(10);
 	    // 4. Set initial lights
 	    SetSinglePedestrianLight(PED_CROSSING_1, LIGHT_RED);
+	    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
 	    SetSinglePedestrianLight(PED_CROSSING_2, LIGHT_RED);
-	    SetAllCarLights(LIGHT_GREEN);
+	    SetCarLaneLight(1, LIGHT_RED);//Vertival
+	    SetCarLaneLight(2, LIGHT_GREEN);//Horizontal
+	    SetCarLaneLight(3, LIGHT_GREEN); //Horizontal
+	    SetCarLaneLight(4, LIGHT_RED);//Vertical
+
 }
 
 void PedestrianCtrl_SetConfig(const TrafficConfig_t *newConfig) {
@@ -245,8 +240,6 @@ uint32_t PedestrianCtrl_GetCycleCount(void) {
 
 void pedestrianCtrlTask(void *argument) {
 	PedestrianCtrl_Init(); //Initialize task
-
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 
     //Task timing variables
     uint32_t xLastWakeTime = osKernelGetTickCount();

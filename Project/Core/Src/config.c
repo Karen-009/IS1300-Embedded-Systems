@@ -117,10 +117,6 @@
 
 	//Function to control the two pedestrian lights
 	void SetSinglePedestrianLight(PedestrianCrossing_t crossing, LightState_t state) {
-		    if (shiftRegMutex != NULL) {
-		        osMutexAcquire(shiftRegMutex, osWaitForever);
-		    }
-
 		    switch(crossing) {
 		    case PED_CROSSING_1:
 		        shiftRegData[0] &= ~(BIT_PL_RED | BIT_PL_GREEN | BIT_PL_BLUE);
@@ -145,10 +141,6 @@
 		    }
 
 		    UpdateShiftRegisters();
-
-		    if (shiftRegMutex != NULL) {
-		        osMutexRelease(shiftRegMutex);
-		    }
 		}
 	//Function to set all the car lane LEDs to the same state, task 1
 	void SetAllCarLights(LightState_t state) {

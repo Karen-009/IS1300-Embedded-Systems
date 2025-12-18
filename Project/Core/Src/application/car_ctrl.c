@@ -55,9 +55,14 @@ LightState_t carLightStates[4];
 
 	    switch (currentCarState) {
 	        case STATE_ACTIVE_V:
-	            // Vertical direction has green, horizontal has red
-	            // R1.3: Pedestrian button pressed more than pedestrianDelay ago
-	            if (pedTimeout2) { // Crossing 2 wants to cross vertical street
+	        	if (pedRequest2) { // Crossing 2 wants to cross vertical street
+	        	        RequestDirectionChange(DIR_VERTICAL, DIR_HORIZONTAL);
+	        	        currentCarState = STATE_TRANSITION_H;
+	        	        osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
+	        	        break;
+	        	   }
+
+	            if (pedTimeout2) {
 	                RequestDirectionChange(DIR_VERTICAL, DIR_HORIZONTAL);
 	                currentCarState = STATE_TRANSITION_H;
 	                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
@@ -118,12 +123,20 @@ LightState_t carLightStates[4];
 	        case STATE_ACTIVE_H:
 	            // Horizontal direction has green, vertical has red
 	            // R1.3: Pedestrian button pressed more than pedestrianDelay ago
-	            if (pedTimeout1) { // Crossing 1 wants to cross horizontal street
-	                RequestDirectionChange(DIR_HORIZONTAL, DIR_VERTICAL);
-	                currentCarState = STATE_TRANSITION_V;
-	                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
-	                break;
-	            }
+	        	if (pedRequest1) { // Crossing 1 wants to cross horizontal street
+	        	        RequestDirectionChange(DIR_HORIZONTAL, DIR_VERTICAL);
+	        	        currentCarState = STATE_TRANSITION_V;
+	        	        osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
+	        	        break;
+	        	    }
+
+	        	    // R1.3: Pedestrian button pressed more than pedestrianDelay ago
+	        	    if (pedTimeout1) {
+	        	        RequestDirectionChange(DIR_HORIZONTAL, DIR_VERTICAL);
+	        	        currentCarState = STATE_TRANSITION_V;
+	        	        osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
+	        	        break;
+	        	    }
 
 	            // R2.4: Auto transition after greenDelay if no cars in horizontal direction
 	            if (!AreCarsPresent(DIR_HORIZONTAL) &&
@@ -189,30 +202,32 @@ LightState_t carLightStates[4];
 	    uint32_t events = osEventFlagsGet(dirVerticalEvents);
 
 	    switch(verticalLightState) {
-	    case LIGHT_GREEN:
-	        if (events & DIR_EVENT_REQUEST_STOP) {
-	        	verticalLightState = LIGHT_ORANGE;
-	            SetDirectionLights(DIR_VERTICAL, LIGHT_ORANGE);
-	            osDelay(config.orangeDelay);
-	            verticalLightState = LIGHT_RED;
-	            SetDirectionLights(DIR_VERTICAL, LIGHT_RED);
-	            osEventFlagsSet(dirVerticalEvents, DIR_EVENT_IS_STOP);
-	            osEventFlagsClear(dirVerticalEvents, DIR_EVENT_REQUEST_STOP);
-	        }
-	        break;
-
-	        case LIGHT_ORANGE:
-	            break;
-
+	        case LIGHT_GREEN:
 	            if (events & DIR_EVENT_REQUEST_STOP) {
 	                verticalLightState = LIGHT_ORANGE;
-	                SetDirectionLights(DIR_HORIZONTAL, LIGHT_ORANGE);
-	                osDelay(config.orangeDelay);  // Uses global config
+	                SetDirectionLights(DIR_VERTICAL, LIGHT_ORANGE);
+	                osDelay(config.orangeDelay);
 	                verticalLightState = LIGHT_RED;
-	                SetDirectionLights(DIR_HORIZONTAL, LIGHT_RED);
-	                osEventFlagsSet(dirHorizontalEvents, DIR_EVENT_IS_STOP);
-	                osEventFlagsClear(dirHorizontalEvents, DIR_EVENT_REQUEST_STOP);
+	                SetDirectionLights(DIR_VERTICAL, LIGHT_RED);
+	                osEventFlagsSet(dirVerticalEvents, DIR_EVENT_IS_STOP);
+	                osEventFlagsClear(dirVerticalEvents, DIR_EVENT_REQUEST_STOP);
 	            }
+	            break;
+
+	        case LIGHT_RED:
+	            if (events & DIR_EVENT_REQUEST_GO) {
+	                verticalLightState = LIGHT_ORANGE;
+	                SetDirectionLights(DIR_VERTICAL, LIGHT_ORANGE);
+	                osDelay(config.orangeDelay);
+	                verticalLightState = LIGHT_GREEN;
+	                SetDirectionLights(DIR_VERTICAL, LIGHT_GREEN);
+	                osEventFlagsClear(dirVerticalEvents, DIR_EVENT_IS_STOP);
+	                osEventFlagsClear(dirVerticalEvents, DIR_EVENT_REQUEST_GO);
+	            }
+	            break;
+
+	        case LIGHT_ORANGE:
+	            // Just wait - transition already in progress
 	            break;
 	    }
 	}
