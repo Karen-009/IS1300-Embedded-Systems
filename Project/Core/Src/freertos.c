@@ -224,10 +224,11 @@ void StartDefaultTask(void *argument)
 void StartTask02(void *argument)
 {
   /* USER CODE BEGIN StartTask02 */
+	PedestrianCtrl_Init(); //Initialize task
 	  for(;;)
 	  {
 		pedestrianCtrlTask(argument);
-		osDelay(50);
+		osDelay(10);
 	  }
   /* USER CODE END StartTask02 */
 }
@@ -244,7 +245,7 @@ void StartTask03(void *argument)
   /* USER CODE BEGIN StartTask03 */
   for(;;) {
 	carCtrlTask(argument);
-	osDelay(50);
+	osDelay(10);
   }
   /* USER CODE END StartTask03 */
 }

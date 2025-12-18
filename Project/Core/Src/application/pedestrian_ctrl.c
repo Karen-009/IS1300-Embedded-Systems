@@ -71,12 +71,12 @@ void SetCrossingCarLights(PedestrianCrossing_t crossing, LightState_t state) {
 	switch(crossing) {
 		case PED_CROSSING_1:
 			SetCarLaneLight(1, state);
-			SetCarLaneLight(3, state);
+			SetCarLaneLight(4, state);
 			break;
 
 		case PED_CROSSING_2:
 			SetCarLaneLight(2, state);
-			SetCarLaneLight(4, state);
+			SetCarLaneLight(3, state);
 			break;
 	}
 }
@@ -91,7 +91,7 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 			break;
 
 		case STATE_WAIT_BUTTON:
-			if(IsButtonPressed(crossing) && CanPedestrianCross(crossing)) {
+			if(IsButtonPressed(crossing)) {
 				cross->state = STATE_BLINKING_PED;
 				cross->blinkStartTime = osKernelGetTickCount();
 				cross->lastBlinkTime = osKernelGetTickCount();
@@ -259,7 +259,7 @@ uint32_t PedestrianCtrl_GetCycleCount(void) {
 /* Add after other includes in pedestrian_ctrl.c */
 
 void pedestrianCtrlTask(void *argument) {
-	PedestrianCtrl_Init(); //Initialize task
+
 
     //Task timing variables
     uint32_t xLastWakeTime = osKernelGetTickCount();

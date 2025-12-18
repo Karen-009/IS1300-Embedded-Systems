@@ -21,11 +21,11 @@ LightState_t carLightStates[4];
 		switch(direction) {
 			case DIR_VERTICAL:
 				SetCarLaneLight(LANE_1, state);
-				SetCarLaneLight(LANE_3, state);
+				SetCarLaneLight(LANE_4, state);
 				break;
 			case DIR_HORIZONTAL:
 				SetCarLaneLight(LANE_2, state);
-				SetCarLaneLight(LANE_4, state);
+				SetCarLaneLight(LANE_3, state);
 				break;
 		}
 	}

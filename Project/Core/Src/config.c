@@ -61,7 +61,7 @@
 	    }
 	    HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
 
-	    osDelay(1);
+
 
 	}
 
@@ -197,9 +197,9 @@
 	bool AreCarsPresent(TrafficDirection_t direction) {
 	    switch(direction) {
 	        case DIR_VERTICAL:
-	            return IsCarPresent(LANE_1) || IsCarPresent(LANE_3);
+	            return IsCarPresent(LANE_1) || IsCarPresent(LANE_4);
 	        case DIR_HORIZONTAL:
-	            return IsCarPresent(LANE_2) || IsCarPresent(LANE_4);
+	            return IsCarPresent(LANE_2) || IsCarPresent(LANE_3);
 	        default:
 	            return false;
 	    }
@@ -209,26 +209,16 @@
 	bool AreCrossingCarLights(TrafficDirection_t crossingDir, LightState_t state) {
 	    switch(crossingDir) {
 	        case DIR_VERTICAL:
-	            return (GetCarLaneState(LANE_1) == state && GetCarLaneState(LANE_3) == state);  // Fixed: LANE_3, not LANE_2
+	            return (GetCarLaneState(LANE_1) == state && GetCarLaneState(LANE_4) == state);  // Fixed: LANE_3, not LANE_2
 	        case DIR_HORIZONTAL:
-	            return (GetCarLaneState(LANE_2) == state && GetCarLaneState(LANE_4) == state);
+	            return (GetCarLaneState(LANE_2) == state && GetCarLaneState(LANE_3) == state);
 	        default:
 	            return false;
 	    }
 	}
 
 	//Check the state of the car lanes to see if it is safe for pedestrian to cross
-	bool CanPedestrianCross(PedestrianCrossing_t crossing) {
-		switch(crossing) {
-			case PED_CROSSING_1:
-	            return AreCrossingCarLights(DIR_VERTICAL, LIGHT_RED);
 
-			case PED_CROSSING_2:
-	            return AreCrossingCarLights(DIR_HORIZONTAL, LIGHT_RED);
-			default:
-				return false;
-		}
-	}
 
 	// Check if car lanes for a crossing are in a specific state
 	bool AreCrossingCarLight(PedestrianCrossing_t crossing, LightState_t state) {
