@@ -29,16 +29,16 @@
 	    .walkingDelay = DEFAULT_WALKING_DELAY
 	};
 
-	osEventFlagsId_t pedEventFlags;
+
+	osEventFlagsId_t pedEventFlags = NULL;
 	osEventFlagsId_t dirVerticalEvents = NULL;
 	osEventFlagsId_t dirHorizontalEvents = NULL;
-	osEventFlagsId_t shiftRegMutex = NULL;
+	osEventFlagsId_t carSensorEvents = NULL;
+	osMutexId_t shiftRegMutex = NULL;
+	osSemaphoreId_t pedCrossingSemaphore = NULL;
 
 	uint32_t currentRedWaitTime = 0;
 	uint32_t greenStartTime = 0;
-
-	osSemaphoreId_t pedCrossingSemaphore = NULL;
-	osEventFlagsId_t carSensorEvents = NULL;
 
 	LightState_t verticalLightState = LIGHT_GREEN;
 	LightState_t horizontalLightState = LIGHT_RED;

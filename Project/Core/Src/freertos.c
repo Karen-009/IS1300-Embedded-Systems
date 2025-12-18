@@ -186,8 +186,12 @@ void MX_FREERTOS_Init(void) {
   /* creation of carSensorEvent */
   carSensorEventHandle = osEventFlagsNew(&carSensorEvent_attributes);
 
-  /* USER CODE BEGIN RTOS_EVENTS */
 
+  /* USER CODE BEGIN RTOS_EVENTS */
+  dirVerticalEvents = dirVerticalEventsHandle;
+  dirHorizontalEvents = dirHorizontalEventsHandle;
+  pedEventFlags = pedEventFlagsHandle;  // THIS IS WHAT'S MISSING!
+  carSensorEvents = carSensorEventHandle;
   /* USER CODE END RTOS_EVENTS */
 
 }

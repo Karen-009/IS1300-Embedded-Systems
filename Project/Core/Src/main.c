@@ -103,7 +103,6 @@ int main(void)
   osDelay(100);
 
   SetSinglePedestrianLight(PED_CROSSING_1, LIGHT_RED);
-  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
   SetSinglePedestrianLight(PED_CROSSING_2, LIGHT_RED);
   SetCarLaneLight(1, LIGHT_RED);//Vertival
   SetCarLaneLight(2, LIGHT_GREEN);//Horizontal
