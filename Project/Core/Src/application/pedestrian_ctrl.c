@@ -150,6 +150,35 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 		            }
 		        }
 		    }
+			if (IsDelayPassed(cross->blinkStartTime, config.pedestrianDelay)) {
+        // Check if another crossing is already green
+        if (!Task3_CanPedestrianGoGreen(crossing)) {
+            // ... existing timeout handling ...
+            break;
+        }
+        if (pedCrossingSemaphore != NULL &&
+            osSemaphoreAcquire(pedCrossingSemaphore, 0) == osOK) {
+            cross->state = STATE_WAIT_CAR_ORANGE; 
+            cross->waitStartTime = osKernelGetTickCount();
+            SetSinglePedestrianLight(crossing, LIGHT_OFF);
+            
+            // Signal car control to transition
+            if (crossing == PED_CROSSING_1) {
+                osEventFlagsSet(dirHorizontalEvents, DIR_EVENT_REQUEST_STOP);
+            } else {
+                osEventFlagsSet(dirVerticalEvents, DIR_EVENT_REQUEST_STOP);
+            }
+            
+			if (crossing == PED_CROSSING_1) {
+                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
+                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
+            } else {
+                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
+                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
+            }
+        }
+    }
+    break;
 		    break;
 
 		case STATE_CAR_ORANGE_TO_RED: //Check if car lane now is red
@@ -189,7 +218,21 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 		        }
 		    }
 		    break;
-
+		
+		case STATE_WAIT_CAR_ORANGE:
+		    // Wait for car lights to become red
+		    if (AreCrossingCarLight(crossing, LIGHT_RED)) {
+		        cross->state = STATE_PED_GREEN_CAR_RED;
+		        cross->walkingStartTime = osKernelGetTickCount();
+		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+		    }
+		    else if (IsDelayPassed(cross->waitStartTime, config.orangeDelay + 1000)) {
+		        cross->state = STATE_PED_GREEN_CAR_RED;
+		        cross->walkingStartTime = osKernelGetTickCount();
+		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+		    }
+		    break;
+		
 		default:
 			cross->state = STATE_INIT;
 			break;
