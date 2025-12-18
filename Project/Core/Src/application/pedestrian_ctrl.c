@@ -111,46 +111,69 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 			break;
 
 		case STATE_BLINKING_PED:
-		    // Continue blinking while waiting
-		    if (IsDelayPassed(cross->lastBlinkTime, config.toggleFreq)) {
-		        TogglePedestrianIndicator(crossing);
-		        cross->lastBlinkTime = osKernelGetTickCount();
-		    }
+    // Continue blinking while waiting
+	    if (IsDelayPassed(cross->lastBlinkTime, config.toggleFreq)) {
+	        TogglePedestrianIndicator(crossing);
+	        cross->lastBlinkTime = osKernelGetTickCount();
+	    }
+	
+	    if (IsDelayPassed(cross->blinkStartTime, config.pedestrianDelay)) {
+	        if (!Task3_CanPedestrianGoGreen(crossing)) {
+	            if (crossing == PED_CROSSING_1) {
+	                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_1);
+	            } else {
+	                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_2);
+	            }
+	            break;
+	        }
 
-		    // Check if pedestrian delay has passed
-		    if (IsDelayPassed(cross->blinkStartTime, config.pedestrianDelay)) {
-		        // R3.3: Check if another crossing is already green
-		        if (!Task3_CanPedestrianGoGreen(crossing)) {
-		            // Another crossing is green, keep waiting
-		            // Set timeout flag to notify car control
-		            if (crossing == PED_CROSSING_1) {
-		                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_1);
-		            } else {
-		                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_2);
-		            }
-		            break;
-		        }
-
-		        // Try to acquire pedestrian crossing semaphore
-		        if (pedCrossingSemaphore != NULL &&
-		            osSemaphoreAcquire(pedCrossingSemaphore, 0) == osOK) {
-		            // Got semaphore - can proceed to change car lights
-		            cross->state = STATE_CAR_ORANGE_TO_RED;
-		            cross->orangeStartTime = osKernelGetTickCount();
-		            SetSinglePedestrianLight(crossing, LIGHT_OFF);
-		            SetCrossingCarLights(crossing, LIGHT_ORANGE);
-
-		            // Clear the request flag since we're handling it
-		            if (crossing == PED_CROSSING_1) {
-		                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
-		                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
-		            } else {
-		                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
-		                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
-		            }
-		        }
-		    }
-		    break;
+			if (AreCrossingCarLight(crossing, LIGHT_RED)) {
+	            if (pedCrossingSemaphore != NULL &&
+	                osSemaphoreAcquire(pedCrossingSemaphore, 0) == osOK) {
+	                cross->state = STATE_PED_GREEN_CAR_RED;
+	                cross->walkingStartTime = osKernelGetTickCount();
+	                SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+	                
+	                // Clear the request flag
+	                if (crossing == PED_CROSSING_1) {
+	                    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
+	                    osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
+	                } else {
+	                    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
+	                    osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
+	                }
+	            }
+	            break; 
+	        }
+	        // Normal case: Car lights are GREEN or ORANGE, need transition
+	        // Try to acquire pedestrian crossing semaphore
+	        if (pedCrossingSemaphore != NULL &&
+	            osSemaphoreAcquire(pedCrossingSemaphore, 0) == osOK) {
+	            // Got semaphore - signal car control to change lights
+	            cross->state = STATE_WAIT_CAR_TRANSITION;  // New intermediate state
+	            cross->transitionStartTime = osKernelGetTickCount();
+	            SetSinglePedestrianLight(crossing, LIGHT_OFF);
+	            
+	            // Signal car control to transition (GREEN → ORANGE → RED)
+	            if (crossing == PED_CROSSING_1) {
+	                // Crossing 1 affects horizontal car lanes (2 & 4)
+	                osEventFlagsSet(dirHorizontalEvents, DIR_EVENT_REQUEST_STOP);
+	            } else {
+	                // Crossing 2 affects vertical car lanes (1 & 3)  
+	                osEventFlagsSet(dirVerticalEvents, DIR_EVENT_REQUEST_STOP);
+	            }
+	            
+	            // Clear flags
+	            if (crossing == PED_CROSSING_1) {
+	                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
+	                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
+	            } else {
+	                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
+	                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
+	            }
+	        }
+	    }
+	    break;
 
 		case STATE_CAR_ORANGE_TO_RED: //Check if car lane now is red
 			if(IsDelayPassed(cross->orangeStartTime, config.orangeDelay)) {
@@ -189,7 +212,21 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 		        }
 		    }
 		    break;
-
+		
+		case STATE_WAIT_CAR_ORANGE:
+		    // Wait for car lights to become red
+		    if (AreCrossingCarLight(crossing, LIGHT_RED)) {
+		        cross->state = STATE_PED_GREEN_CAR_RED;
+		        cross->walkingStartTime = osKernelGetTickCount();
+		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+		    }
+		    else if (IsDelayPassed(cross->waitStartTime, config.orangeDelay + 1000)) {
+		        cross->state = STATE_PED_GREEN_CAR_RED;
+		        cross->walkingStartTime = osKernelGetTickCount();
+		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+		    }
+		    break;
+		
 		default:
 			cross->state = STATE_INIT;
 			break;
