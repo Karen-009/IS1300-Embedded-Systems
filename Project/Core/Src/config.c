@@ -45,9 +45,6 @@
 	CarState_t currentCarState = STATE_ACTIVE_V;
 
 	void UpdateShiftRegisters(void) {
-	    if(shiftRegMutex != NULL) {
-	        osMutexAcquire(shiftRegMutex, osWaitForever);
-	    }
 	    HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
 
 	    uint8_t spiData[3];
@@ -66,9 +63,6 @@
 
 	    osDelay(1);
 
-	    if(shiftRegMutex != NULL) {
-	        osMutexRelease(shiftRegMutex);
-	    }
 	}
 
 	//Function to set the car lane LEDs

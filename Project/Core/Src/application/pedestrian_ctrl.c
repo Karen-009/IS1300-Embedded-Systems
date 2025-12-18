@@ -265,14 +265,12 @@ void pedestrianCtrlTask(void *argument) {
     uint32_t xLastWakeTime = osKernelGetTickCount();
     const uint32_t xTaskPeriod = 10; //10ms per task period
 
-    for(;;) {
+        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
     	ProcessCrossingState(PED_CROSSING_1, &crossing1);
     	ProcessCrossingState(PED_CROSSING_2, &crossing2);
 
-    	Task3_Coordinator();
-
     	xLastWakeTime += xTaskPeriod;
     	osDelayUntil(xLastWakeTime);
-    }
+
 }
