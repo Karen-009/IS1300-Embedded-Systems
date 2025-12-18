@@ -22,12 +22,15 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
-#include "../Inc/config.h"
-#include "../Inc/application/traffic_manager.h"
-#include "../Inc/application/pedestrian_ctrl.h"  // ADD THIS
-#include "../Inc/application/car_ctrl.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "../Inc/config.h"
+#include "../Inc/application/pedestrian_ctrl.h"
+#include "../Inc/application/car_ctrl.h"
+#include "../Inc/application/traffic_manager.h"
+
+
 
 /* USER CODE END Includes */
 
@@ -72,6 +75,13 @@ const osThreadAttr_t carCtrl_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for sensorTask */
+osThreadId_t sensorTaskHandle;
+const osThreadAttr_t sensorTask_attributes = {
+  .name = "sensorTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityAboveNormal,
+};
 /* Definitions for shiftRegMutex */
 osMutexId_t shiftRegMutexHandle;
 const osMutexAttr_t shiftRegMutex_attributes = {
@@ -111,6 +121,7 @@ const osEventFlagsAttr_t carSensorEvent_attributes = {
 void StartDefaultTask(void *argument);
 void StartTask02(void *argument);
 void StartTask03(void *argument);
+void StartTask04(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -155,6 +166,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of carCtrl */
   carCtrlHandle = osThreadNew(StartTask03, NULL, &carCtrl_attributes);
+
+  /* creation of sensorTask */
+  sensorTaskHandle = osThreadNew(StartTask04, NULL, &sensorTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -210,7 +224,7 @@ void StartTask02(void *argument)
 	  {
 		pedestrianCtrlTask(argument);
 	  }
-	  /* USER CODE END StartTask02 */
+  /* USER CODE END StartTask02 */
 }
 
 /* USER CODE BEGIN Header_StartTask03 */
@@ -223,9 +237,28 @@ void StartTask02(void *argument)
 void StartTask03(void *argument)
 {
   /* USER CODE BEGIN StartTask03 */
-  /* Infinite loop */
+  for(;;) {
 	carCtrlTask(argument);
+  }
   /* USER CODE END StartTask03 */
+}
+
+/* USER CODE BEGIN Header_StartTask04 */
+/**
+* @brief Function implementing the sensorTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTask04 */
+void StartTask04(void *argument)
+{
+  /* USER CODE BEGIN StartTask04 */
+  /* Infinite loop */
+  for(;;)
+  {
+	  Task3_Coordinator();
+  }
+  /* USER CODE END StartTask04 */
 }
 
 /* Private application code --------------------------------------------------*/

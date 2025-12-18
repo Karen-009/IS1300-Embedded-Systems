@@ -18,37 +18,84 @@
 
 static PedestrianCrossing_t activePedestrian = PED_CROSSING_1;
 static uint32_t lastCheckTime = 0;
+static uint32_t coordinatorLastRun = 0;
 
 void Task3_Coordinator(void) {
     uint32_t currentTime = osKernelGetTickCount();
-    static bool coordinatorInitialized = false;
 
-    // Check only every 100ms (save CPU)
-    if ((currentTime - lastCheckTime) < 100) {
+    if ((currentTime - coordinatorLastRun) < 50) {
         return;
     }
-    lastCheckTime = currentTime;
+    coordinatorLastRun = currentTime;
 
-    // Check current pedestrian states using YOUR EXISTING variables
-    bool crossing1Green = (crossing1.state == STATE_PED_GREEN_CAR_RED);
-    bool crossing2Green = (crossing2.state == STATE_PED_GREEN_CAR_RED);
+    // Get current pedestrian states
+    CrossingState_t* crossing1State = GetCrossingState(PED_CROSSING_1);
+    CrossingState_t* crossing2State = GetCrossingState(PED_CROSSING_2);
 
-    // R3.3: Only one can be green
+    bool crossing1Green = (crossing1State != NULL &&
+                          crossing1State->state == STATE_PED_GREEN_CAR_RED);
+    bool crossing2Green = (crossing2State != NULL &&
+                          crossing2State->state == STATE_PED_GREEN_CAR_RED);
+
+    // R3.3: Only one pedestrian crossing can be green at a time
     if (crossing1Green && crossing2Green) {
-        // Both think they're green - fix it
+        // Emergency fix: turn one red
         if (activePedestrian == PED_CROSSING_1) {
-            // Force crossing 2 to red using YOUR EXISTING function
+            // Force crossing 2 to red
             SetSinglePedestrianLight(PED_CROSSING_2, LIGHT_RED);
-            crossing2.state = STATE_INIT;
-            crossing2.isActive = false;
+            if (crossing2State) {
+                crossing2State->state = STATE_INIT;
+                crossing2State->isActive = false;
+            }
+            // Release semaphore so crossing 2 can be used later
+            if (pedCrossingSemaphore != NULL) {
+                osSemaphoreRelease(pedCrossingSemaphore);
+            }
         } else {
+            // Force crossing 1 to red
             SetSinglePedestrianLight(PED_CROSSING_1, LIGHT_RED);
-            crossing1.state = STATE_INIT;
-            crossing1.isActive = false;
+            if (crossing1State) {
+                crossing1State->state = STATE_INIT;
+                crossing1State->isActive = false;
+            }
+            // Release semaphore
+            if (pedCrossingSemaphore != NULL) {
+                osSemaphoreRelease(pedCrossingSemaphore);
+            }
         }
-    } else if (crossing1Green) {
+    }
+
+    // Update active pedestrian tracking
+    if (crossing1Green) {
         activePedestrian = PED_CROSSING_1;
     } else if (crossing2Green) {
         activePedestrian = PED_CROSSING_2;
     }
+}
+
+bool Task3_CanPedestrianGoGreen(PedestrianCrossing_t crossing) {
+    // Check if the other crossing is already green
+    CrossingState_t* otherCrossing = (crossing == PED_CROSSING_1) ?
+                                     GetCrossingState(PED_CROSSING_2) :
+                                     GetCrossingState(PED_CROSSING_1);
+
+    if (otherCrossing && otherCrossing->state == STATE_PED_GREEN_CAR_RED) {
+        return false; // Other crossing is green, can't go green
+    }
+
+    return true; // Can go green
+}
+
+void Task3_ForcePedestrianRed(PedestrianCrossing_t crossing) {
+    SetSinglePedestrianLight(crossing, LIGHT_RED);
+
+    CrossingState_t* crossState = GetCrossingState(crossing);
+    if (crossState) {
+        crossState->state = STATE_INIT;
+        crossState->isActive = false;
+    }
+}
+
+PedestrianCrossing_t Task3_GetActivePedestrian(void) {
+    return activePedestrian;
 }

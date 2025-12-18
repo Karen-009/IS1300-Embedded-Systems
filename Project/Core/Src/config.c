@@ -249,22 +249,63 @@
 	}
 
 	bool CanTurnRight(TrafficLane_t lane) {
-	    // R3.5: Right turn allowed ONLY when pedestrian crossing on right is green
+	    // R3.5: Right turn allowed when pedestrian crossing on right is green
+	    // AND the car has green light
+	    // First, check if this lane has green light
+	    if (GetCarLaneState(lane) != LIGHT_GREEN) {
+	        return false; // Can't turn right if not green
+	    }
+
+	    // Check pedestrian crossing on the right
 	    switch(lane) {
-	        case LANE_1:  // Turning right from Lane 1
-	            // Check pedestrian crossing on the right (horizontal direction)
-	            return (GetCarLaneState(LANE_2) == LIGHT_GREEN && GetCarLaneState(LANE_3) == LIGHT_GREEN);
+	        case LANE_1:  // Vertical top, turning right (east)
+	            // Check if pedestrian crossing 1 (horizontal) is green
+	            {
+	                CrossingState_t* crossing = GetCrossingState(PED_CROSSING_1);
+	                return (crossing != NULL && crossing->state == STATE_PED_GREEN_CAR_RED);
+	            }
 
-	        case LANE_2:  // Turning right from Lane 2
-	            return (GetCarLaneState(LANE_1) == LIGHT_GREEN && GetCarLaneState(LANE_4) == LIGHT_GREEN);
+	        case LANE_2:  // Horizontal right, turning right (south)
+	            // Check if pedestrian crossing 2 (vertical) is green
+	            {
+	                CrossingState_t* crossing = GetCrossingState(PED_CROSSING_2);
+	                return (crossing != NULL && crossing->state == STATE_PED_GREEN_CAR_RED);
+	            }
 
-	        case LANE_3:  // Turning right from Lane 3
-	            return (GetCarLaneState(LANE_1) == LIGHT_GREEN && GetCarLaneState(LANE_4) == LIGHT_GREEN);
+	        case LANE_3:  // Vertical bottom, turning right (west)
+	            // Check if pedestrian crossing 1 (horizontal) is green
+	            {
+	                CrossingState_t* crossing = GetCrossingState(PED_CROSSING_2);
+	                return (crossing != NULL && crossing->state == STATE_PED_GREEN_CAR_RED);
+	            }
 
-	        case LANE_4:  // Turning right from Lane 4
-	            return (GetCarLaneState(LANE_2) == LIGHT_GREEN && GetCarLaneState(LANE_3) == LIGHT_GREEN);
+	        case LANE_4:  // Horizontal left, turning right (north)
+	            // Check if pedestrian crossing 2 (vertical) is green
+	            {
+	                CrossingState_t* crossing = GetCrossingState(PED_CROSSING_1);
+	                return (crossing != NULL && crossing->state == STATE_PED_GREEN_CAR_RED);
+	            }
 
 	        default:
 	            return false;
+	    }
+	}
+
+
+	void SensorTask(void *argument) {
+	    uint32_t xLastWakeTime = osKernelGetTickCount();
+	    const uint32_t xTaskPeriod = 20; // Check sensors every 20ms
+
+	    for(;;) {
+	        bool car1 = IsCarPresent(LANE_1);
+	        bool car2 = IsCarPresent(LANE_2);
+	        bool car3 = IsCarPresent(LANE_3);
+	        bool car4 = IsCarPresent(LANE_4);
+
+	        // You could set event flags here if needed
+	        // For example, to notify car control of sensor changes
+
+	        xLastWakeTime += xTaskPeriod;
+	        osDelayUntil(xLastWakeTime);
 	    }
 	}

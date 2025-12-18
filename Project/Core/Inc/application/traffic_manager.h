@@ -1,6 +1,3 @@
-//The main coordinator: sync the pedestrian & vehicle logic
-//Priority: high(osPriorityHigh)
-
 #ifndef TRAFFIC_MANAGER_H
 #define TRAFFIC_MANAGER_H
 
@@ -10,22 +7,24 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-	bool crossing1Green();
-	bool crossing2Green();
-	void Task3_EnforceSingleGreen(void);
 
-	bool Task3_CanPedestrianGoGreen(PedestrianCrossing_t crossing);
+    // R3.3: Only one pedestrian crossing is green at a time
+    void Task3_Coordinator(void);
 
-	void Task3_CoordinatorInit(void);
+    // Helper functions
+    bool Task3_CanPedestrianGoGreen(PedestrianCrossing_t crossing);
+    void Task3_ForcePedestrianRed(PedestrianCrossing_t crossing);
+    PedestrianCrossing_t Task3_GetActivePedestrian(void);
 
-	PedestrianCrossing_t Task3_GetActivePedestrian(void);
+    // Check current states
+    bool crossing1Green(void);
+    bool crossing2Green(void);
 
-	void Task3_ForcePedestrianRed(PedestrianCrossing_t crossing);
-
-	void Task3_Coordinator(void);
+    // Right-turn logic (R3.5)
+    bool CanCarTurnRight(TrafficLane_t lane);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* TASK3_COORDINATOR_H */
+#endif /* TRAFFIC_MANAGER_H */

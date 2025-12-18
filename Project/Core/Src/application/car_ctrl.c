@@ -62,12 +62,15 @@ LightState_t carLightStates[4];
 	        	        break;
 	        	   }
 
-	            if (pedTimeout2) {
-	                RequestDirectionChange(DIR_VERTICAL, DIR_HORIZONTAL);
-	                currentCarState = STATE_TRANSITION_H;
-	                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
-	                break;
-	            }
+	        	if (pedTimeout2) {
+	        	    RequestDirectionChange(DIR_VERTICAL, DIR_HORIZONTAL);
+	        	    currentCarState = STATE_TRANSITION_H;
+	        	    osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
+
+	        	    // Also clear any pending request
+	        	    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
+	        	    break;
+	        	}
 
 	            // R2.4: Auto transition after greenDelay if no cars in vertical direction
 	            if (!AreCarsPresent(DIR_VERTICAL) &&
@@ -131,12 +134,15 @@ LightState_t carLightStates[4];
 	        	    }
 
 	        	    // R1.3: Pedestrian button pressed more than pedestrianDelay ago
-	        	    if (pedTimeout1) {
-	        	        RequestDirectionChange(DIR_HORIZONTAL, DIR_VERTICAL);
-	        	        currentCarState = STATE_TRANSITION_V;
-	        	        osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
-	        	        break;
-	        	    }
+	        	if (pedTimeout1) {
+	        	    RequestDirectionChange(DIR_HORIZONTAL, DIR_VERTICAL);
+	        	    currentCarState = STATE_TRANSITION_V;
+	        	    osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
+
+	        	    // Also clear any pending request
+	        	    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
+	        	    break;
+	        	}
 
 	            // R2.4: Auto transition after greenDelay if no cars in horizontal direction
 	            if (!AreCarsPresent(DIR_HORIZONTAL) &&

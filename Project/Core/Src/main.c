@@ -46,7 +46,11 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+extern osEventFlagsId_t pedEventFlags;
+extern osEventFlagsId_t dirVerticalEvents;
+extern osEventFlagsId_t dirHorizontalEvents;
+extern osMutexId_t shiftRegMutex;
+extern osSemaphoreId_t pedCrossingSemaphore;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,12 +100,15 @@ int main(void)
   // Initialize shift register control pins
   HAL_GPIO_WritePin(Reset_GPIO_Port, Reset_Pin, GPIO_PIN_SET);     // Release reset (active LOW)
   HAL_GPIO_WritePin(Enable_GPIO_Port, Enable_Pin, GPIO_PIN_RESET); // Enable outputs (active LOW)
-  osDelay(100); // Wait for shift registers to stabilize
+  osDelay(100);
 
-
-  // Optional: Send startup message via UART
-  uint8_t startupMsg[] = "Task 3 System Started\r\n";
-  HAL_UART_Transmit(&huart2, startupMsg, sizeof(startupMsg)-1, 100);
+  SetSinglePedestrianLight(PED_CROSSING_1, LIGHT_RED);
+  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+  SetSinglePedestrianLight(PED_CROSSING_2, LIGHT_RED);
+  SetCarLaneLight(1, LIGHT_RED);//Vertival
+  SetCarLaneLight(2, LIGHT_GREEN);//Horizontal
+  SetCarLaneLight(3, LIGHT_GREEN); //Horizontal
+  SetCarLaneLight(4, LIGHT_RED);//Vertical
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */

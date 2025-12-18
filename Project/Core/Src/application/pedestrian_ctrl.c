@@ -119,6 +119,18 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 
 		    // Check if pedestrian delay has passed
 		    if (IsDelayPassed(cross->blinkStartTime, config.pedestrianDelay)) {
+		        // R3.3: Check if another crossing is already green
+		        if (!Task3_CanPedestrianGoGreen(crossing)) {
+		            // Another crossing is green, keep waiting
+		            // Set timeout flag to notify car control
+		            if (crossing == PED_CROSSING_1) {
+		                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_1);
+		            } else {
+		                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_2);
+		            }
+		            break;
+		        }
+
 		        // Try to acquire pedestrian crossing semaphore
 		        if (pedCrossingSemaphore != NULL &&
 		            osSemaphoreAcquire(pedCrossingSemaphore, 0) == osOK) {
@@ -131,13 +143,11 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 		            // Clear the request flag since we're handling it
 		            if (crossing == PED_CROSSING_1) {
 		                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
+		                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
 		            } else {
 		                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
+		                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
 		            }
-		        } else {
-		            // Can't get semaphore - another crossing is active
-		            // Just keep blinking and waiting
-		            // Optionally, you could set a timeout here
 		        }
 		    }
 		    break;
@@ -208,8 +218,6 @@ void PedestrianCtrl_Init(void) {
 	    osDelay(10);
 	    // 4. Set initial lights
 	    SetSinglePedestrianLight(PED_CROSSING_1, LIGHT_RED);
-	    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
 	    SetSinglePedestrianLight(PED_CROSSING_2, LIGHT_RED);
 	    SetCarLaneLight(1, LIGHT_RED);//Vertival
 	    SetCarLaneLight(2, LIGHT_GREEN);//Horizontal
