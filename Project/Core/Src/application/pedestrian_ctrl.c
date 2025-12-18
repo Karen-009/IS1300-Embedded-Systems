@@ -11,11 +11,20 @@ Included functions:
 #include "../Inc/config.h"
 #include "../Inc/spi.h"
 #include "usart.h"
+#include "../Inc/application/traffic_manager.h"
 
-static CrossingState_t crossing1 = {0}; //State for pedestrian crossing 1
-static CrossingState_t crossing2 = {0}; //State for pedestrian crossing 2
+CrossingState_t crossing1 = {0}; //State for pedestrian crossing
+CrossingState_t crossing2 = {0}; //State for pedestrian crossing 2
 
 static uint8_t cycleCounter = 0;
+
+CrossingState_t* GetCrossingState(PedestrianCrossing_t crossing) {
+    switch(crossing) {
+        case PED_CROSSING_1: return &crossing1;
+        case PED_CROSSING_2: return &crossing2;
+        default: return NULL;
+    }
+}
 
 void TogglePedestrianIndicator(PedestrianCrossing_t crossing) {
     static bool indicatorState1 = false;
@@ -207,6 +216,9 @@ void PedestrianCtrl_Init(void) {
 	    SetCarLaneLight(3, LIGHT_GREEN); //Horizontal
 	    SetCarLaneLight(4, LIGHT_RED);//Vertical
 
+	    shiftRegData[0] &= ~BIT_PL_BLUE;
+	    shiftRegData[1] &= ~BIT_PL_BLUE;
+
 }
 
 void PedestrianCtrl_SetConfig(const TrafficConfig_t *newConfig) {
@@ -249,6 +261,8 @@ void pedestrianCtrlTask(void *argument) {
 
     	ProcessCrossingState(PED_CROSSING_1, &crossing1);
     	ProcessCrossingState(PED_CROSSING_2, &crossing2);
+
+    	Task3_Coordinator();
 
     	xLastWakeTime += xTaskPeriod;
     	osDelayUntil(xLastWakeTime);

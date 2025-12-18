@@ -144,6 +144,9 @@
 	extern LightState_t horizontalLightState;
 	extern CarState_t currentCarState;
 
+	extern CrossingState_t crossing1;
+	extern CrossingState_t crossing2;
+
 	//Adding new event flag to the sensor
 	#define CAR_SENSOR_1_EVENT  (1U << 4)
 	#define CAR_SENSOR_2_EVENT  (1U << 5)

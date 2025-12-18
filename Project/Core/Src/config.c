@@ -45,26 +45,30 @@
 	CarState_t currentCarState = STATE_ACTIVE_V;
 
 	void UpdateShiftRegisters(void) {
+	    if(shiftRegMutex != NULL) {
+	        osMutexAcquire(shiftRegMutex, osWaitForever);
+	    }
+	    HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_RESET);
 
-		if(shiftRegMutex != NULL) {
-			osMutexAcquire(shiftRegMutex, osWaitForever);
-		}
-	    HAL_StatusTypeDef status;
-	    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);  // STCP = LOW
-	    uint8_t spiData[3] = {shiftRegData[2], shiftRegData[1], shiftRegData[0]};
-	    status = HAL_SPI_Transmit(&hspi3, spiData, 3, HAL_MAX_DELAY);
+	    uint8_t spiData[3];
+	    spiData[0] = shiftRegData[2];
+	    spiData[1] = shiftRegData[1];
+	    spiData[2] = shiftRegData[0];
+
+	    HAL_StatusTypeDef status = HAL_SPI_Transmit(&hspi3, spiData, 3, HAL_MAX_DELAY);
 
 	    if(status != HAL_OK) {
-	        HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5); // SPI error indicator
+	        static uint8_t errorCount = 0;
+	        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+	        errorCount++;
 	    }
+	    HAL_GPIO_WritePin(STPC_GPIO_Port, STPC_Pin, GPIO_PIN_SET);
 
-	    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);  // STCP = HIGH
-	    osDelay(1); // Small delay to ensure shift register latches
+	    osDelay(1);
 
-		if(shiftRegMutex != NULL) {
-			osMutexRelease(shiftRegMutex);
-		}
-		osDelay(1);
+	    if(shiftRegMutex != NULL) {
+	        osMutexRelease(shiftRegMutex);
+	    }
 	}
 
 	//Function to set the car lane LEDs
@@ -244,25 +248,21 @@
 	    }
 	}
 
-	//Task 3
 	bool CanTurnRight(TrafficLane_t lane) {
-	    /* R3.5: A car is allowed to turn right when a crossing on the right lane is green */
+	    // R3.5: Right turn allowed ONLY when pedestrian crossing on right is green
 	    switch(lane) {
-	        case LANE_1:  // Lane 2 -> turning right lane 4
-	            // Check if the crossing to the right (horizontal direction) is green
-	            return (GetCarLaneState(LANE_2) == LIGHT_GREEN || GetCarLaneState(LANE_4) == LIGHT_GREEN);
+	        case LANE_1:  // Turning right from Lane 1
+	            // Check pedestrian crossing on the right (horizontal direction)
+	            return (GetCarLaneState(LANE_2) == LIGHT_GREEN && GetCarLaneState(LANE_3) == LIGHT_GREEN);
 
-	        case LANE_2:  // Lane 1 -> turning right to lane 3
-	            // Check if the crossing to the right (vertical direction) is green
-	            return (GetCarLaneState(LANE_1) == LIGHT_GREEN || GetCarLaneState(LANE_3) == LIGHT_GREEN);
+	        case LANE_2:  // Turning right from Lane 2
+	            return (GetCarLaneState(LANE_1) == LIGHT_GREEN && GetCarLaneState(LANE_4) == LIGHT_GREEN);
 
-	        case LANE_3:  // Lane2 -> turning right to lane4
-	            // Check if the crossing to the right (horizontal direction) is green
-	            return (GetCarLaneState(LANE_2) == LIGHT_GREEN || GetCarLaneState(LANE_4) == LIGHT_GREEN);
+	        case LANE_3:  // Turning right from Lane 3
+	            return (GetCarLaneState(LANE_1) == LIGHT_GREEN && GetCarLaneState(LANE_4) == LIGHT_GREEN);
 
-	        case LANE_4:  // Lan 1 -> turning right to Lane 3
-	            // Check if the crossing to the right (vertical direction) is green
-	            return (GetCarLaneState(LANE_1) == LIGHT_GREEN || GetCarLaneState(LANE_3) == LIGHT_GREEN);
+	        case LANE_4:  // Turning right from Lane 4
+	            return (GetCarLaneState(LANE_2) == LIGHT_GREEN && GetCarLaneState(LANE_3) == LIGHT_GREEN);
 
 	        default:
 	            return false;

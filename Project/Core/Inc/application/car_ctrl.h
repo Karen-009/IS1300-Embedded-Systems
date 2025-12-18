@@ -8,6 +8,7 @@
 #define CAR_CTRL_H
 
 #include <stdbool.h>
+#include "../Inc/application/car_ctrl.h"
 #include <stdint.h>
 #include "config.h"
 
@@ -18,6 +19,7 @@ extern "C" {
 void ProcessMainFSM(void);
 void RequestDirectionChange(TrafficDirection_t fromDir, TrafficDirection_t toDir);
 void SetDirectionLights(TrafficDirection_t direction, LightState_t state);
+
 
 #ifdef __cplusplus
 }

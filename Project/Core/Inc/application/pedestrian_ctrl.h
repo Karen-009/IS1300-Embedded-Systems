@@ -23,6 +23,10 @@
 	uint32_t PedestrianCtrl_GetCycleCount(void);
 	void pedestrianCtrlTask(void *argument);
 
+	CrossingState_t* GetCrossingState(PedestrianCrossing_t crossing);
+
+	CrossingState_t* GetCrossingState(PedestrianCrossing_t crossing);
+	bool IsCrossingGreen(PedestrianCrossing_t crossing);
 
 #ifdef __cplusplus
 }

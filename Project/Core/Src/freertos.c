@@ -23,7 +23,9 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "../Inc/config.h"
-
+#include "../Inc/application/traffic_manager.h"
+#include "../Inc/application/pedestrian_ctrl.h"  // ADD THIS
+#include "../Inc/application/car_ctrl.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -119,7 +121,6 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
   /* Create the mutex(es) */
   /* creation of shiftRegMutex */
@@ -172,7 +173,7 @@ void MX_FREERTOS_Init(void) {
   carSensorEventHandle = osEventFlagsNew(&carSensorEvent_attributes);
 
   /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
+
   /* USER CODE END RTOS_EVENTS */
 
 }

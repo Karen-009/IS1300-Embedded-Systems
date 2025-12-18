@@ -229,6 +229,8 @@ LightState_t carLightStates[4];
 	        case LIGHT_ORANGE:
 	            // Just wait - transition already in progress
 	            break;
+	        default:
+	        	break;
 	    }
 	}
 
@@ -260,6 +262,8 @@ LightState_t carLightStates[4];
 	                osEventFlagsClear(dirHorizontalEvents, DIR_EVENT_REQUEST_GO);
 	            }
 	            break;
+	        default:
+	        	break;
 	    }
 	}
 
