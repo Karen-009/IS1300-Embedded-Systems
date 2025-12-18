@@ -295,7 +295,7 @@ const char* PedestrianCtrl_GetStateString(PedestrianState_t state) {
 	case STATE_INIT:	return "INIT";
 	case STATE_WAIT_BUTTON:	return "WAIT_BUTTON";
 	case STATE_BLINKING_PED:	return "BLINKING_PED";
-	case STATE_WAIT_CAR_TRANSITION: return "WAIT_CAR_TRANSITION";  // NEW
+	case STATE_WAIT_CAR_TRANSITION: return "WAIT_CAR_TRANSITION";
     case STATE_CAR_ORANGE_TO_RED:   return "CAR_ORANGE_TO_RED";
     case STATE_CAR_RED: 	return "CAR_RED";
 	case STATE_PED_GREEN_CAR_RED:	return "PED_GREEN_CAR_RED";
