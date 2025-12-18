@@ -14,15 +14,19 @@
 #ifdef __cplusplus
 	extern "C" {
 #endif
-	void pedestrianCtrlTask(void *argument); //Task function prototype, for FreeRTOS
-
-	//Public API functions def.
+	void TogglePedestrianIndicator(PedestrianCrossing_t crossing);
+	bool IsDelayPassed(uint32_t startTime, uint32_t delayMs);
+	void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross);
 	void PedestrianCtrl_Init(void);
 	void PedestrianCtrl_SetConfig(const TrafficConfig_t *newConfig);
-
-	//Debug functions
 	const char* PedestrianCtrl_GetStateString(PedestrianState_t state);
 	uint32_t PedestrianCtrl_GetCycleCount(void);
+	void pedestrianCtrlTask(void *argument);
+
+	CrossingState_t* GetCrossingState(PedestrianCrossing_t crossing);
+
+	CrossingState_t* GetCrossingState(PedestrianCrossing_t crossing);
+	bool IsCrossingGreen(PedestrianCrossing_t crossing);
 
 #ifdef __cplusplus
 }
