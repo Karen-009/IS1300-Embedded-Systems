@@ -24,7 +24,8 @@
 		STATE_PED_GREEN_CAR_RED,
 		STATE_CAR_ORANGE_TO_RED,
 		STATE_CAR_RED,
-		STATE_CAR_ORANGE_2
+		STATE_CAR_ORANGE_2,
+		STATE_WAIT_CAR_ORANGE,
 	} PedestrianState_t;
 
 	//States for pedestrian crossing in task 1
