@@ -62,6 +62,21 @@ const osThreadAttr_t pedestrianCtrl_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for dirVerticalEvents */
+osEventFlagsId_t dirVerticalEventsHandle;
+const osEventFlagsAttr_t dirVerticalEvents_attributes = {
+  .name = "dirVerticalEvents"
+};
+/* Definitions for dirHorizontalEvents */
+osEventFlagsId_t dirHorizontalEventsHandle;
+const osEventFlagsAttr_t dirHorizontalEvents_attributes = {
+  .name = "dirHorizontalEvents"
+};
+/* Definitions for pedEventFlags */
+osEventFlagsId_t pedEventFlagsHandle;
+const osEventFlagsAttr_t pedEventFlags_attributes = {
+  .name = "pedEventFlags"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -109,6 +124,16 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
+
+  /* Create the event(s) */
+  /* creation of dirVerticalEvents */
+  dirVerticalEventsHandle = osEventFlagsNew(&dirVerticalEvents_attributes);
+
+  /* creation of dirHorizontalEvents */
+  dirHorizontalEventsHandle = osEventFlagsNew(&dirHorizontalEvents_attributes);
+
+  /* creation of pedEventFlags */
+  pedEventFlagsHandle = osEventFlagsNew(&pedEventFlags_attributes);
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
