@@ -110,7 +110,7 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 			}
 			break;
 
-		case STATE_BLINKING_PED:
+	case STATE_BLINKING_PED:
     // Continue blinking while waiting
 	    if (IsDelayPassed(cross->lastBlinkTime, config.toggleFreq)) {
 	        TogglePedestrianIndicator(crossing);
@@ -221,6 +221,19 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
 		    }
 		    else if (IsDelayPassed(cross->waitStartTime, config.orangeDelay + 1000)) {
+		        cross->state = STATE_PED_GREEN_CAR_RED;
+		        cross->walkingStartTime = osKernelGetTickCount();
+		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+		    }
+		    break;
+
+	case STATE_WAIT_CAR_TRANSITION:
+		    if (AreCrossingCarLight(crossing, LIGHT_RED)) {
+		        cross->state = STATE_PED_GREEN_CAR_RED;
+		        cross->walkingStartTime = osKernelGetTickCount();
+		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+		    }
+		    else if (IsDelayPassed(cross->transitionStartTime,  config.orangeDelay + 2000)) { 
 		        cross->state = STATE_PED_GREEN_CAR_RED;
 		        cross->walkingStartTime = osKernelGetTickCount();
 		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
