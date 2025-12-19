@@ -38,6 +38,8 @@
 	    uint32_t walkingStartTime;
 	    bool buttonPressed;
 	    bool isActive;  // If the crossing still is in use
+	    uint32_t transitionStartTime;  // For waiting for car transition
+	    uint32_t waitStartTime;
 	} CrossingState_t;
 
 	//Possible Delays & toggle
