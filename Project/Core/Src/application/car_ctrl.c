@@ -286,47 +286,20 @@ LightState_t carLightStates[4];
 	    uint32_t xLastWakeTime = osKernelGetTickCount();
 	    const uint32_t xTaskPeriod = 10;
 
+        currentCarState = STATE_ACTIVE_V;
+        verticalLightState = LIGHT_GREEN;
+        horizontalLightState = LIGHT_RED;
+        SetDirectionLights(DIR_VERTICAL, LIGHT_GREEN);
+        SetDirectionLights(DIR_HORIZONTAL, LIGHT_RED);
+
+        greenStartTime = osKernelGetTickCount();
+
 	    // Tracking variable to see when we transition out of manual
-	    bool wasManualLastCycle = false;
 
 	    for(;;) {
-	        // 1. Read switches
-	        bool sw1 = (HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin) == GPIO_PIN_SET);
-	        bool sw2 = (HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin) == GPIO_PIN_SET);
-	        bool sw3 = (HAL_GPIO_ReadPin(SW3_GPIO_Port, SW3_Pin) == GPIO_PIN_SET);
-	        bool sw4 = (HAL_GPIO_ReadPin(SW4_GPIO_Port, SW4_Pin) == GPIO_PIN_SET);
-
-	        bool manualModeActive = (sw1 || sw2 || sw3 || sw4);
-
-	        if (manualModeActive) {
-	            // Force lights based on switches
-	            SetCarLaneLight(LANE_1, sw1 ? LIGHT_GREEN : LIGHT_RED);
-	            SetCarLaneLight(LANE_2, sw2 ? LIGHT_GREEN : LIGHT_RED);
-	            SetCarLaneLight(LANE_3, sw3 ? LIGHT_GREEN : LIGHT_RED);
-	            SetCarLaneLight(LANE_4, sw4 ? LIGHT_GREEN : LIGHT_RED);
-
-	            wasManualLastCycle = true;
-	        }
-	        else {
-	            // 2. Just switched from Manual to Auto?
-	            if (wasManualLastCycle) {
-	                // Reset the FSM to a known safe starting point
-	                currentCarState = STATE_ACTIVE_V;
-	                verticalLightState = LIGHT_GREEN;
-	                horizontalLightState = LIGHT_RED;
-	                SetDirectionLights(DIR_VERTICAL, LIGHT_GREEN);
-	                SetDirectionLights(DIR_HORIZONTAL, LIGHT_RED);
-
-	                // IMPORTANT: Restart the timer NOW so it stays green for the full duration
-	                greenStartTime = osKernelGetTickCount();
-	                wasManualLastCycle = false;
-	            }
-
-	            // 3. Run the Normal FSM
-	            ProcessVerticalDirection();
-	            ProcessHorizontalDirection();
-	            ProcessMainFSM();
-	        }
+	    	ProcessVerticalDirection();
+	    	ProcessHorizontalDirection();
+	    	ProcessMainFSM();
 
 	        xLastWakeTime += xTaskPeriod;
 	        osDelayUntil(xLastWakeTime);
