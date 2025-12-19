@@ -39,7 +39,6 @@ void Task3_Coordinator(void) {
 
     // R3.3: Only one pedestrian crossing can be green at a time
     if (crossing1Green && crossing2Green) {
-        // Emergency fix: turn one red
         if (activePedestrian == PED_CROSSING_1) {
             // Force crossing 2 to red
             SetSinglePedestrianLight(PED_CROSSING_2, LIGHT_RED);
@@ -47,12 +46,10 @@ void Task3_Coordinator(void) {
                 crossing2State->state = STATE_INIT;
                 crossing2State->isActive = false;
             }
-            // Release semaphore so crossing 2 can be used later
             if (pedCrossingSemaphore != NULL) {
                 osSemaphoreRelease(pedCrossingSemaphore);
             }
         } else {
-            // Force crossing 1 to red
             SetSinglePedestrianLight(PED_CROSSING_1, LIGHT_RED);
             if (crossing1State) {
                 crossing1State->state = STATE_INIT;
@@ -64,8 +61,6 @@ void Task3_Coordinator(void) {
             }
         }
     }
-
-    // Update active pedestrian tracking
     if (crossing1Green) {
         activePedestrian = PED_CROSSING_1;
     } else if (crossing2Green) {
