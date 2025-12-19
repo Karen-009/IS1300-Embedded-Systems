@@ -139,7 +139,6 @@ LightState_t carLightStates[4];
 	        	    currentCarState = STATE_TRANSITION_V;
 	        	    osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
 
-	        	    // Also clear any pending request
 	        	    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
 	        	    break;
 	        	}
@@ -175,9 +174,7 @@ LightState_t carLightStates[4];
 	                break;
 	            }
 
-	            // Check if pedestrian just pressed button (not timeout yet)
 	            if (pedRequest1) {
-	                // Acknowledge the request
 	                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
 	            }
 
@@ -194,7 +191,6 @@ LightState_t carLightStates[4];
 	            break;
 
 	        default:
-	            // Should never reach here, but reset to safe state
 	        	currentCarState = STATE_ACTIVE_V;
 	            SetDirectionLights(DIR_VERTICAL, LIGHT_GREEN);
 	            SetDirectionLights(DIR_HORIZONTAL, LIGHT_RED);
@@ -237,7 +233,6 @@ LightState_t carLightStates[4];
 	            break;
 
 	        case LIGHT_ORANGE:
-	            // Just wait - transition already in progress
 	            break;
 	        default:
 	        	break;
@@ -293,8 +288,6 @@ LightState_t carLightStates[4];
         SetDirectionLights(DIR_HORIZONTAL, LIGHT_RED);
 
         greenStartTime = osKernelGetTickCount();
-
-	    // Tracking variable to see when we transition out of manual
 
 	    for(;;) {
 	    	ProcessVerticalDirection();
