@@ -153,16 +153,14 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 	                }
 
 	                // HARDWARE UPDATE (mutex only)
-	                if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
 		                if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
 		                    SetSinglePedestrianLight(crossing, LIGHT_GREEN);
 		                }
 		                osMutexRelease(shiftRegMutex);
-	                }
 	            }
 	            break;
 	        }
-    		break;
+	        break;
 
 		case STATE_CAR_ORANGE_TO_RED: //Check if car lane now is red
 			if(IsDelayPassed(cross->orangeStartTime, config.orangeDelay)) {
