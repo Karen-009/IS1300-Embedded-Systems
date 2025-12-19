@@ -150,9 +150,9 @@
 
 	bool IsCarPresent(TrafficLane_t lane) {
 	    switch(lane) {
-	        case LANE_1:
-	            return (HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin) == GPIO_PIN_SET);
 	        case LANE_2:
+	            return (HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin) == GPIO_PIN_SET);
+	        case LANE_1:
 	            return (HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin) == GPIO_PIN_SET);
 	        case LANE_3:
 	            return (HAL_GPIO_ReadPin(SW3_GPIO_Port, SW3_Pin) == GPIO_PIN_SET);
