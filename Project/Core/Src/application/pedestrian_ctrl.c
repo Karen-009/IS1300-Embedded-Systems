@@ -141,18 +141,15 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 
 	        if (AreCrossingCarLight(crossing, LIGHT_RED)) {
 	            if (pedCrossingSemaphore != NULL && osSemaphoreAcquire(pedCrossingSemaphore, 0) == osOK) {
-	                // LOGIC & TIMING (outside mutex)
 	                cross->state = STATE_PED_GREEN_CAR_RED;
 	                cross->walkingStartTime = osKernelGetTickCount();
 
-	                // EVENT FLAGS (outside mutex)
 	                if (crossing == PED_CROSSING_1) {
 	                    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1 | PED_EVENT_TIMEOUT_1);
 	                } else {
 	                    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2 | PED_EVENT_TIMEOUT_2);
 	                }
 
-	                // HARDWARE UPDATE (mutex only)
 		                if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
 		                    SetSinglePedestrianLight(crossing, LIGHT_GREEN);
 		                }
@@ -181,18 +178,15 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 
 		case STATE_PED_GREEN_CAR_RED:
 			if(IsDelayPassed(cross->walkingStartTime, config.walkingDelay)) {
-			    // LOGIC & TIMING outside mutex
 			    cross->state = STATE_CAR_ORANGE_2;
 			    cross->orangeStartTime = osKernelGetTickCount();
 
-			    // HARDWARE (mutex only)
 			    if(shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
 			        SetSinglePedestrianLight(crossing, LIGHT_RED);
 			        SetCrossingCarLights(crossing, LIGHT_ORANGE);
 			        osMutexRelease(shiftRegMutex);
 			    }
 
-			    // Semaphore release (logic, outside mutex)
 			    if (pedCrossingSemaphore != NULL) {
 			        osSemaphoreRelease(pedCrossingSemaphore);
 			    }
@@ -206,7 +200,6 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 		        cross->isActive = false;
 		        cycleCounter++;
 
-		        /* R3.3: Release the pedestrian crossing semaphore */
 		        if (pedCrossingSemaphore != NULL) {
 		            osSemaphoreRelease(pedCrossingSemaphore);
 		        }
@@ -235,11 +228,9 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 		if (AreCrossingCarLight(crossing, LIGHT_RED) ||
 		    IsDelayPassed(cross->transitionStartTime, config.orangeDelay + 2000)) {
 
-		    // LOGIC & TIMING
 		    cross->state = STATE_PED_GREEN_CAR_RED;
 		    cross->walkingStartTime = osKernelGetTickCount();
 
-		    // HARDWARE UPDATE
 		    if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
 		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
 		        osMutexRelease(shiftRegMutex);
@@ -277,10 +268,10 @@ void PedestrianCtrl_Init(void) {
 	    // 4. Set initial lights
 	    SetSinglePedestrianLight(PED_CROSSING_1, LIGHT_RED);
 	    SetSinglePedestrianLight(PED_CROSSING_2, LIGHT_RED);
-	    SetCarLaneLight(1, LIGHT_RED);//Vertival
-	    SetCarLaneLight(2, LIGHT_GREEN);//Horizontal
-	    SetCarLaneLight(3, LIGHT_GREEN); //Horizontal
-	    SetCarLaneLight(4, LIGHT_RED);//Vertical
+	    SetCarLaneLight(1, LIGHT_RED);
+	    SetCarLaneLight(2, LIGHT_GREEN);
+	    SetCarLaneLight(3, LIGHT_GREEN); 
+	    SetCarLaneLight(4, LIGHT_RED);
 
 	    shiftRegData[0] &= ~BIT_PL_BLUE;
 	    shiftRegData[1] &= ~BIT_PL_BLUE;
@@ -315,7 +306,6 @@ const char* PedestrianCtrl_GetStateString(PedestrianState_t state) {
 uint32_t PedestrianCtrl_GetCycleCount(void) {
 	return cycleCounter;
 }
-/* Add after other includes in pedestrian_ctrl.c */
 
 void pedestrianCtrlTask(void *argument) {
     uint32_t xLastWakeTime = osKernelGetTickCount();
