@@ -1,7 +1,5 @@
 /*
-Task 1: Pedestrian control
-Included functions:
-	int pdMS_to:TICKS();
+ * Karen Li implemented the whole file
  */
 #include <string.h>
 #include <stdbool.h>
