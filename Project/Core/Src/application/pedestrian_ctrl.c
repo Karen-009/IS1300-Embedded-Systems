@@ -110,70 +110,42 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 			}
 			break;
 
-	case STATE_BLINKING_PED:
-    // Continue blinking while waiting
-	    if (IsDelayPassed(cross->lastBlinkTime, config.toggleFreq)) {
-	        TogglePedestrianIndicator(crossing);
-	        cross->lastBlinkTime = osKernelGetTickCount();
-	    }
-	
-	    if (IsDelayPassed(cross->blinkStartTime, config.pedestrianDelay)) {
-	        if (!Task3_CanPedestrianGoGreen(crossing)) {
-	            if (crossing == PED_CROSSING_1) {
-	                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_1);
-	            } else {
-	                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_2);
-	            }
-	            break;
-	        }
+		case STATE_BLINKING_PED:
+		    // 1. BLINK-LOGIK (Körs varje loop-iteration)
+		    // Detta ser till att det blå ljuset faktiskt blinkar
+		    if (IsDelayPassed(cross->lastBlinkTime, config.toggleFreq)) {
+		        TogglePedestrianIndicator(crossing);
+		        cross->lastBlinkTime = osKernelGetTickCount();
+		    }
 
-			if (AreCrossingCarLight(crossing, LIGHT_RED)) {
-	            if (pedCrossingSemaphore != NULL &&
-	                osSemaphoreAcquire(pedCrossingSemaphore, 0) == osOK) {
-	                cross->state = STATE_PED_GREEN_CAR_RED;
-	                cross->walkingStartTime = osKernelGetTickCount();
-	                SetSinglePedestrianLight(crossing, LIGHT_GREEN);
-	                
-	                // Clear the request flag
-	                if (crossing == PED_CROSSING_1) {
-	                    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
-	                    osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
-	                } else {
-	                    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
-	                    osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
-	                }
-	            }
-	            break; 
-	        }
-	        // Normal case: Car lights are GREEN or ORANGE, need transition
-	        // Try to acquire pedestrian crossing semaphore
-	        if (pedCrossingSemaphore != NULL &&
-	            osSemaphoreAcquire(pedCrossingSemaphore, 0) == osOK) {
-	            // Got semaphore - signal car control to change lights
-	            cross->state = STATE_WAIT_CAR_TRANSITION;  // New intermediate state
-	            cross->transitionStartTime = osKernelGetTickCount();
-	            SetSinglePedestrianLight(crossing, LIGHT_OFF);
-	            
-	            // Signal car control to transition (GREEN → ORANGE → RED)
-	            if (crossing == PED_CROSSING_1) {
-	                // Crossing 1 affects horizontal car lanes (2 & 4)
-	                osEventFlagsSet(dirHorizontalEvents, DIR_EVENT_REQUEST_STOP);
-	            } else {
-	                // Crossing 2 affects vertical car lanes (1 & 3)  
-	                osEventFlagsSet(dirVerticalEvents, DIR_EVENT_REQUEST_STOP);
-	            }
-	            
-	            // Clear flags
-	            if (crossing == PED_CROSSING_1) {
-	                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
-	                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_1);
-	            } else {
-	                osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
-	                osEventFlagsClear(pedEventFlags, PED_EVENT_TIMEOUT_2);
-	            }
-	        }
-	    }
-	    break;
+		    // 2. ÖVERGÅNGS-LOGIK (Körs bara när tiden gått ut)
+		    if (IsDelayPassed(cross->blinkStartTime, config.pedestrianDelay)) {
+
+		        // Signalera till bilarna att de måste börja stanna
+		        if (crossing == PED_CROSSING_1) {
+		            // Crossing 1 korsar horisontell gata (LANE 2 & 3)
+		            osEventFlagsSet(dirHorizontalEvents, DIR_EVENT_REQUEST_STOP);
+		            osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_1); // Berätta för MainFSM
+		        } else {
+		            // Crossing 2 korsar vertikal gata (LANE 1 & 4)
+		            osEventFlagsSet(dirVerticalEvents, DIR_EVENT_REQUEST_STOP);
+		            osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_2); // Berätta för MainFSM
+		        }
+
+		        // VIKTIGT: Byt state nu!
+		        // Genom att gå till WAIT_CAR_TRANSITION slutar vi sätta flaggorna
+		        // men vi kan fortsätta blinka där inne om vi vill.
+		        cross->transitionStartTime = osKernelGetTickCount();
+		        cross->state = STATE_WAIT_CAR_TRANSITION;
+
+		        // Rensa ursprungs-requesten eftersom vi nu är i "timeout/vänta"-fasen
+		        if (crossing == PED_CROSSING_1) {
+		            osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
+		        } else {
+		            osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
+		        }
+		    }
+		    break;
 
 		case STATE_CAR_ORANGE_TO_RED: //Check if car lane now is red
 			if(IsDelayPassed(cross->orangeStartTime, config.orangeDelay)) {
