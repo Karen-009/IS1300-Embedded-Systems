@@ -38,30 +38,36 @@ void TogglePedestrianIndicator(PedestrianCrossing_t crossing) {
         case PED_CROSSING_1:
             if ((currentTime - lastToggle1) >= config.toggleFreq) {
                 indicatorState1 = !indicatorState1;
-                if(indicatorState1) {
-                    shiftRegData[0] |= BIT_PL_BLUE;
-                } else {
-                    shiftRegData[0] &= ~BIT_PL_BLUE;
-                }
-                UpdateShiftRegisters();
                 lastToggle1 = currentTime;
+
+                if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
+                    if (indicatorState1) shiftRegData[0] |= BIT_PL_BLUE;
+                    else                 shiftRegData[0] &= ~BIT_PL_BLUE;
+                    UpdateShiftRegisters();
+                    osMutexRelease(shiftRegMutex);
+                }
             }
             break;
 
         case PED_CROSSING_2:
             if ((currentTime - lastToggle2) >= config.toggleFreq) {
                 indicatorState2 = !indicatorState2;
-                if(indicatorState2) {
-                    shiftRegData[1] |= BIT_PL_BLUE;
-                } else {
-                    shiftRegData[1] &= ~BIT_PL_BLUE;
-                }
-                UpdateShiftRegisters();
                 lastToggle2 = currentTime;
+
+                if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
+                    if (indicatorState2) shiftRegData[1] |= BIT_PL_BLUE;
+                    else                 shiftRegData[1] &= ~BIT_PL_BLUE;
+                    UpdateShiftRegisters();
+                    osMutexRelease(shiftRegMutex);
+                }
             }
+            break;
+
+        default:
             break;
     }
 }
+
 bool IsDelayPassed(uint32_t startTime, uint32_t delayMs) {
     uint32_t currentTime = osKernelGetTickCount();  // CMSIS function
     return ((currentTime - startTime) >= delayMs);  // Direct ms comparison
@@ -84,8 +90,11 @@ void SetCrossingCarLights(PedestrianCrossing_t crossing, LightState_t state) {
 void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross) {
 	switch (cross->state) {
 		case STATE_INIT:
-			SetSinglePedestrianLight(crossing, LIGHT_RED);
-			cross->state = STATE_WAIT_BUTTON;
+            if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
+                SetSinglePedestrianLight(crossing, LIGHT_RED);
+                osMutexRelease(shiftRegMutex);
+            }
+            cross->state = STATE_WAIT_BUTTON;
 			cross->buttonPressed = false;
 			cross->isActive = false;
 			break;
@@ -105,47 +114,53 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
                     osEventFlagsSet(pedEventFlags, PED_EVENT_REQUEST_2);
                 }
 
-				SetSinglePedestrianLight(crossing, LIGHT_RED);
-				TogglePedestrianIndicator(crossing);
+                if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
+                    SetSinglePedestrianLight(crossing, LIGHT_RED);
+                    osMutexRelease(shiftRegMutex);
+                }
+                TogglePedestrianIndicator(crossing);
 			}
 			break;
 
-		case STATE_BLINKING_PED:
-		    // 1. BLINK-LOGIK (Körs varje loop-iteration)
-		    // Detta ser till att det blå ljuset faktiskt blinkar
-		    if (IsDelayPassed(cross->lastBlinkTime, config.toggleFreq)) {
-		        TogglePedestrianIndicator(crossing);
-		        cross->lastBlinkTime = osKernelGetTickCount();
-		    }
+	case STATE_BLINKING_PED:
+    // Continue blinking while waiting
+	    if (IsDelayPassed(cross->lastBlinkTime, config.toggleFreq)) {
+	        TogglePedestrianIndicator(crossing);
+	        cross->lastBlinkTime = osKernelGetTickCount();
+	    }
+	
+	    if (IsDelayPassed(cross->blinkStartTime, config.pedestrianDelay)) {
+	        if (!Task3_CanPedestrianGoGreen(crossing)) {
+	            if (crossing == PED_CROSSING_1) {
+	                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_1);
+	            } else {
+	                osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_2);
+	            }
+	            break;
+	        }
 
-		    // 2. ÖVERGÅNGS-LOGIK (Körs bara när tiden gått ut)
-		    if (IsDelayPassed(cross->blinkStartTime, config.pedestrianDelay)) {
+	        if (AreCrossingCarLight(crossing, LIGHT_RED)) {
+	            if (pedCrossingSemaphore != NULL && osSemaphoreAcquire(pedCrossingSemaphore, 0) == osOK) {
+	                // LOGIC & TIMING (outside mutex)
+	                cross->state = STATE_PED_GREEN_CAR_RED;
+	                cross->walkingStartTime = osKernelGetTickCount();
 
-		        // Signalera till bilarna att de måste börja stanna
-		        if (crossing == PED_CROSSING_1) {
-		            // Crossing 1 korsar horisontell gata (LANE 2 & 3)
-		            osEventFlagsSet(dirHorizontalEvents, DIR_EVENT_REQUEST_STOP);
-		            osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_1); // Berätta för MainFSM
-		        } else {
-		            // Crossing 2 korsar vertikal gata (LANE 1 & 4)
-		            osEventFlagsSet(dirVerticalEvents, DIR_EVENT_REQUEST_STOP);
-		            osEventFlagsSet(pedEventFlags, PED_EVENT_TIMEOUT_2); // Berätta för MainFSM
-		        }
+	                // EVENT FLAGS (outside mutex)
+	                if (crossing == PED_CROSSING_1) {
+	                    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1 | PED_EVENT_TIMEOUT_1);
+	                } else {
+	                    osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2 | PED_EVENT_TIMEOUT_2);
+	                }
 
-		        // VIKTIGT: Byt state nu!
-		        // Genom att gå till WAIT_CAR_TRANSITION slutar vi sätta flaggorna
-		        // men vi kan fortsätta blinka där inne om vi vill.
-		        cross->transitionStartTime = osKernelGetTickCount();
-		        cross->state = STATE_WAIT_CAR_TRANSITION;
-
-		        // Rensa ursprungs-requesten eftersom vi nu är i "timeout/vänta"-fasen
-		        if (crossing == PED_CROSSING_1) {
-		            osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_1);
-		        } else {
-		            osEventFlagsClear(pedEventFlags, PED_EVENT_REQUEST_2);
-		        }
-		    }
-		    break;
+	                // HARDWARE UPDATE (mutex only)
+		                if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
+		                    SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+		                }
+		                osMutexRelease(shiftRegMutex);
+	            }
+	            break;
+	        }
+	        break;
 
 		case STATE_CAR_ORANGE_TO_RED: //Check if car lane now is red
 			if(IsDelayPassed(cross->orangeStartTime, config.orangeDelay)) {
@@ -158,16 +173,29 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 			if(AreCrossingCarLight(crossing, LIGHT_RED)) {
 				cross->state = STATE_PED_GREEN_CAR_RED;
 				cross->walkingStartTime = osKernelGetTickCount();
-				SetSinglePedestrianLight(crossing, LIGHT_GREEN);
-			}
+                if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
+                    SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+                    osMutexRelease(shiftRegMutex);
+                }			}
 			break;
 
 		case STATE_PED_GREEN_CAR_RED:
 			if(IsDelayPassed(cross->walkingStartTime, config.walkingDelay)) {
-				cross->state = STATE_CAR_ORANGE_2;
-				cross->orangeStartTime = osKernelGetTickCount();
-				SetSinglePedestrianLight(crossing, LIGHT_RED);
-				SetCrossingCarLights(crossing, LIGHT_ORANGE);
+			    // LOGIC & TIMING outside mutex
+			    cross->state = STATE_CAR_ORANGE_2;
+			    cross->orangeStartTime = osKernelGetTickCount();
+
+			    // HARDWARE (mutex only)
+			    if(shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
+			        SetSinglePedestrianLight(crossing, LIGHT_RED);
+			        SetCrossingCarLights(crossing, LIGHT_ORANGE);
+			        osMutexRelease(shiftRegMutex);
+			    }
+
+			    // Semaphore release (logic, outside mutex)
+			    if (pedCrossingSemaphore != NULL) {
+			        osSemaphoreRelease(pedCrossingSemaphore);
+			    }
 			}
 			break;
 
@@ -190,26 +218,34 @@ void ProcessCrossingState(PedestrianCrossing_t crossing, CrossingState_t *cross)
 		    if (AreCrossingCarLight(crossing, LIGHT_RED)) {
 		        cross->state = STATE_PED_GREEN_CAR_RED;
 		        cross->walkingStartTime = osKernelGetTickCount();
-		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
-		    }
+                if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
+                    SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+                    osMutexRelease(shiftRegMutex);
+                }		    }
 		    else if (IsDelayPassed(cross->waitStartTime, config.orangeDelay + 1000)) {
 		        cross->state = STATE_PED_GREEN_CAR_RED;
 		        cross->walkingStartTime = osKernelGetTickCount();
-		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
-		    }
+                if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
+                    SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+                    osMutexRelease(shiftRegMutex);
+                }		    }
 		    break;
 
 	case STATE_WAIT_CAR_TRANSITION:
-		    if (AreCrossingCarLight(crossing, LIGHT_RED)) {
-		        cross->state = STATE_PED_GREEN_CAR_RED;
-		        cross->walkingStartTime = osKernelGetTickCount();
+		if (AreCrossingCarLight(crossing, LIGHT_RED) ||
+		    IsDelayPassed(cross->transitionStartTime, config.orangeDelay + 2000)) {
+
+		    // LOGIC & TIMING
+		    cross->state = STATE_PED_GREEN_CAR_RED;
+		    cross->walkingStartTime = osKernelGetTickCount();
+
+		    // HARDWARE UPDATE
+		    if (shiftRegMutex != NULL && osMutexAcquire(shiftRegMutex, 0) == osOK) {
 		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
+		        osMutexRelease(shiftRegMutex);
 		    }
-		    else if (IsDelayPassed(cross->transitionStartTime,  config.orangeDelay + 2000)) { 
-		        cross->state = STATE_PED_GREEN_CAR_RED;
-		        cross->walkingStartTime = osKernelGetTickCount();
-		        SetSinglePedestrianLight(crossing, LIGHT_GREEN);
-		    }
+		}
+	    }
 		    break;
 		
 		default:
@@ -282,18 +318,17 @@ uint32_t PedestrianCtrl_GetCycleCount(void) {
 /* Add after other includes in pedestrian_ctrl.c */
 
 void pedestrianCtrlTask(void *argument) {
-
-
-    //Task timing variables
     uint32_t xLastWakeTime = osKernelGetTickCount();
-    const uint32_t xTaskPeriod = 10; //10ms per task period
+    const uint32_t xTaskPeriod = 10; //10ms
 
+    for (;;) {
         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
-    	ProcessCrossingState(PED_CROSSING_1, &crossing1);
-    	ProcessCrossingState(PED_CROSSING_2, &crossing2);
+        ProcessCrossingState(PED_CROSSING_1, &crossing1);
+        ProcessCrossingState(PED_CROSSING_2, &crossing2);
 
-    	xLastWakeTime += xTaskPeriod;
-    	osDelayUntil(xLastWakeTime);
-
+        xLastWakeTime += xTaskPeriod;
+        osDelayUntil(xLastWakeTime);
+    }
 }
+
