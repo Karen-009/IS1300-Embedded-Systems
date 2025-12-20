@@ -1,3 +1,4 @@
+//Whole file was implemented by Karen Li
 //Basic configuration and function definitions
 
 #ifndef CONFIG_H
