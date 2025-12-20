@@ -1,8 +1,5 @@
 /*
- * traffic_manager.c
- *
- *  Created on: Dec 4, 2025
- *      Author: karenli009
+ * Karen Li Implemented the whole file
  */
 #include "../Inc/config.h"
 #include "main.h"
