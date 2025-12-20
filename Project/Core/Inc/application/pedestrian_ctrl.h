@@ -1,3 +1,4 @@
+//Karen Li implemented the whole file
 //Handles the pedestrian crossings (upper & lower)
 //Priority: normal(osPriorityNormal)
 
