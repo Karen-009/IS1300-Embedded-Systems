@@ -1,3 +1,4 @@
+//Karen Li implemented the whole file
 //Handles the car traffic signals
 //Priority: normal
 
