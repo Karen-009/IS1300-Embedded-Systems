@@ -1,3 +1,5 @@
+//Implemented by Karen Li
+
 #include "../Inc/config.h"
 #include "main.h"
 #include "../Inc/application/pedestrian_ctrl.h"
