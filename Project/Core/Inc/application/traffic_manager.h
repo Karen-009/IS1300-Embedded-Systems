@@ -1,3 +1,5 @@
+// Implemented by Karen Li
+
 #ifndef TRAFFIC_MANAGER_H
 #define TRAFFIC_MANAGER_H
 
