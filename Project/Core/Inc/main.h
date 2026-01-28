@@ -90,6 +90,7 @@ void Error_Handler(void);
 #define PB5_MOSI_GPIO_Port GPIOB
 #define PB7_Pin GPIO_PIN_7
 #define PB7_GPIO_Port GPIOB
+#define PB7_EXTI_IRQn EXTI9_5_IRQn
 
 /* USER CODE BEGIN Private defines */
 

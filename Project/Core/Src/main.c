@@ -22,7 +22,6 @@
 #include "spi.h"
 #include "usart.h"
 #include "gpio.h"
-#include "UART_task.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -94,8 +93,6 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
-
-
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_SPI3_Init();
@@ -103,7 +100,6 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   /* USER CODE BEGIN 2 */
-  Uart_Init();
 
   /* USER CODE END 2 */
 

@@ -65,34 +65,52 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t pedestrianCtrlHandle;
 const osThreadAttr_t pedestrianCtrl_attributes = {
   .name = "pedestrianCtrl",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for carCtrl */
 osThreadId_t carCtrlHandle;
 const osThreadAttr_t carCtrl_attributes = {
   .name = "carCtrl",
-  .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for myTask04 */
-osThreadId_t myTask04Handle;
-const osThreadAttr_t myTask04_attributes = {
-  .name = "myTask04",
+/* Definitions for sensorTask */
+osThreadId_t sensorTaskHandle;
+const osThreadAttr_t sensorTask_attributes = {
+  .name = "sensorTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityAboveNormal,
 };
-/* Definitions for myTask05 */
-osThreadId_t myTask05Handle;
-const osThreadAttr_t myTask05_attributes = {
-  .name = "myTask05",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+/* Definitions for shiftRegMutex */
+osMutexId_t shiftRegMutexHandle;
+const osMutexAttr_t shiftRegMutex_attributes = {
+  .name = "shiftRegMutex"
 };
-/* Definitions for shiftReg */
-osMutexId_t shiftRegHandle;
-const osMutexAttr_t shiftReg_attributes = {
-  .name = "shiftReg"
+/* Definitions for pedCrossingSemaphore */
+osSemaphoreId_t pedCrossingSemaphoreHandle;
+const osSemaphoreAttr_t pedCrossingSemaphore_attributes = {
+  .name = "pedCrossingSemaphore"
+};
+/* Definitions for dirVerticalEvents */
+osEventFlagsId_t dirVerticalEventsHandle;
+const osEventFlagsAttr_t dirVerticalEvents_attributes = {
+  .name = "dirVerticalEvents"
+};
+/* Definitions for dirHorizontalEvents */
+osEventFlagsId_t dirHorizontalEventsHandle;
+const osEventFlagsAttr_t dirHorizontalEvents_attributes = {
+  .name = "dirHorizontalEvents"
+};
+/* Definitions for pedEventFlags */
+osEventFlagsId_t pedEventFlagsHandle;
+const osEventFlagsAttr_t pedEventFlags_attributes = {
+  .name = "pedEventFlags"
+};
+/* Definitions for carSensorEvent */
+osEventFlagsId_t carSensorEventHandle;
+const osEventFlagsAttr_t carSensorEvent_attributes = {
+  .name = "carSensorEvent"
 };
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,7 +122,6 @@ void StartDefaultTask(void *argument);
 void StartTask02(void *argument);
 void StartTask03(void *argument);
 void StartTask04(void *argument);
-void StartTask05(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -115,44 +132,70 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-  osKernelInitialize();
+osKernelInitialize();
   /* USER CODE END Init */
-
-  /* --- MUTEXES --- */
+  /* Create the mutex(es) */
   /* creation of shiftRegMutex */
-  const osMutexAttr_t shiftReg_attributes = {
-    .name = "shiftRegMutex"
-  };
-  shiftRegMutex = osMutexNew(&shiftReg_attributes);
+  shiftRegMutexHandle = osMutexNew(&shiftRegMutex_attributes);
 
-  /* --- SEMAPHORES --- */
+  /* USER CODE BEGIN RTOS_MUTEX */
+  shiftRegMutex = shiftRegMutexHandle;
+  /* USER CODE END RTOS_MUTEX */
+
+  /* Create the semaphores(s) */
   /* creation of pedCrossingSemaphore */
-  const osSemaphoreAttr_t pedSema_attr = {
-    .name = "pedSema"
-  };
-  pedCrossingSemaphore = osSemaphoreNew(1, 1, &pedSema_attr);
+  pedCrossingSemaphoreHandle = osSemaphoreNew(1, 1, &pedCrossingSemaphore_attributes);
 
-  /* --- THREADS --- */
-  /* Dessa sköts oftast korrekt av CubeMX, låt dem vara om de inte ger fel */
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  pedCrossingSemaphore = pedCrossingSemaphoreHandle;
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* creation of pedestrianCtrl */
   pedestrianCtrlHandle = osThreadNew(StartTask02, NULL, &pedestrianCtrl_attributes);
+
+  /* creation of carCtrl */
   carCtrlHandle = osThreadNew(StartTask03, NULL, &carCtrl_attributes);
-  myTask04Handle = osThreadNew(StartTask04, NULL, &myTask04_attributes);
-  myTask05Handle = osThreadNew(StartTask05, NULL, &myTask05_attributes);
 
-  /* --- EVENT FLAGS --- */
-  /* Här skapar vi flaggorna direkt till dina variabler */
-  const osEventFlagsAttr_t ev_attr = { .name = "events" };
+  /* creation of sensorTask */
+  sensorTaskHandle = osThreadNew(StartTask04, NULL, &sensorTask_attributes);
 
-  dirVerticalEvents = osEventFlagsNew(&ev_attr);
-  dirHorizontalEvents = osEventFlagsNew(&ev_attr);
-  pedEventFlags = osEventFlagsNew(&ev_attr);
-  carSensorEvents = osEventFlagsNew(&ev_attr);
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* creation of dirVerticalEvents */
+  dirVerticalEventsHandle = osEventFlagsNew(&dirVerticalEvents_attributes);
+
+  /* creation of dirHorizontalEvents */
+  dirHorizontalEventsHandle = osEventFlagsNew(&dirHorizontalEvents_attributes);
+
+  /* creation of pedEventFlags */
+  pedEventFlagsHandle = osEventFlagsNew(&pedEventFlags_attributes);
+
+  /* creation of carSensorEvent */
+  carSensorEventHandle = osEventFlagsNew(&carSensorEvent_attributes);
 
   /* USER CODE BEGIN RTOS_EVENTS */
-  /* Här kan du lämna tomt nu eftersom vi initierade dem ovan */
+  dirVerticalEvents = dirVerticalEventsHandle;
+  dirHorizontalEvents = dirHorizontalEventsHandle;
+  pedEventFlags = pedEventFlagsHandle;  // THIS IS WHAT'S MISSING!
+  carSensorEvents = carSensorEventHandle;
   /* USER CODE END RTOS_EVENTS */
+
 }
+
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
   * @brief  Function implementing the defaultTask thread.
@@ -226,24 +269,6 @@ void StartTask04(void *argument)
 
   }
   /* USER CODE END StartTask04 */
-}
-
-/* USER CODE BEGIN Header_StartTask05 */
-/**
-* @brief Function implementing the myTask05 thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartTask05 */
-void StartTask05(void *argument)
-{
-  /* USER CODE BEGIN StartTask05 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END StartTask05 */
 }
 
 /* Private application code --------------------------------------------------*/
