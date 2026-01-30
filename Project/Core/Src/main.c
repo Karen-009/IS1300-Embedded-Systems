@@ -50,6 +50,9 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+uint8_t tx_data[1];
+uint8_t rx_data[4];
+uint16_t values;
 
 /* USER CODE END PV */
 
@@ -94,12 +97,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
   MX_SPI3_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
-  /* USER CODE BEGIN 2 */
-  /* USER CODE BEGIN 2 */
+  HAL_UART_Receive_IT(&huart2, rx_data, 4);
 
   /* USER CODE END 2 */
 
@@ -119,7 +120,6 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -175,7 +175,61 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(huart);
 
+  /* NOTE : This function should not be modified, when the callback is needed,
+            the HAL_UART_RxCpltCallback can be implemented in the user file.
+   */
+  if (huart != &huart2) return;
+  uint16_t value = (rx_data[2] << 8) | rx_data[3];
+  uint8_t ack = 0x00;
+
+  switch (rx_data[0])
+  {
+      case 0x01: // toggleFreq
+          if (value >= 50 && value <= 3000) {
+              config.toggleFreq = value;
+              ack = 0x01;
+          }
+          break;
+
+      case 0x02: // pedestrianDelay
+          if (value >= 50 && value <= 3000) {
+              config.pedestrianDelay = value;
+              ack = 0x01;
+          }
+          break;
+
+      case 0x03: // walkingDelay
+          if (value >= 50 && value <= 3000) {
+              config.walkingDelay = value;
+              ack = 0x01;
+          }
+          break;
+
+      case 0x04: // orangeDelay
+          if (value >= 50 && value <= 3000) {
+              config.orangeDelay = value;
+              ack = 0x01;
+          }
+          break;
+
+      default:
+          ack = 0x00;
+          break;
+  }
+
+  tx_data[0] = ack;
+
+  // Non-blocking ACK
+  HAL_UART_Transmit_IT(&huart2, tx_data, 1);
+
+  // Re-arm UART reception (MANDATORY)
+  HAL_UART_Receive_IT(&huart2, rx_data, 4);
+}
 /* USER CODE END 4 */
 
 /**

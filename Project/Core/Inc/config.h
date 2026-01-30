@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "cmsis_os2.h" //osDelay (CMSIS-RTOS v2)
+#include "cmsis_os2.h"
 
 	//All possible states of LEDs
 	typedef enum {

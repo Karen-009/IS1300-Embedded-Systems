@@ -47,7 +47,7 @@ extern SPI_HandleTypeDef hspi3;
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+void USART(void *argument);
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -81,6 +81,13 @@ const osThreadAttr_t sensorTask_attributes = {
   .name = "sensorTask",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityAboveNormal,
+};
+/* Definitions for USART */
+osThreadId_t USARTHandle;
+const osThreadAttr_t USART_attributes = {
+  .name = "USART",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for shiftRegMutex */
 osMutexId_t shiftRegMutexHandle;
@@ -122,6 +129,7 @@ void StartDefaultTask(void *argument);
 void StartTask02(void *argument);
 void StartTask03(void *argument);
 void StartTask04(void *argument);
+void StartTask05(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -170,6 +178,9 @@ osKernelInitialize();
 
   /* creation of sensorTask */
   sensorTaskHandle = osThreadNew(StartTask04, NULL, &sensorTask_attributes);
+
+  /* creation of USART */
+  USARTHandle = osThreadNew(StartTask05, NULL, &USART_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -269,6 +280,24 @@ void StartTask04(void *argument)
 
   }
   /* USER CODE END StartTask04 */
+}
+
+/* USER CODE BEGIN Header_StartTask05 */
+/**
+* @brief Function implementing the USART thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTask05 */
+void StartTask05(void *argument)
+{
+  /* USER CODE BEGIN StartTask05 */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartTask05 */
 }
 
 /* Private application code --------------------------------------------------*/

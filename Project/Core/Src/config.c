@@ -219,7 +219,6 @@
 
 	//Check the state of the car lanes to see if it is safe for pedestrian to cross
 
-
 	// Check if car lanes for a crossing are in a specific state
 	bool AreCrossingCarLight(PedestrianCrossing_t crossing, LightState_t state) {
 	    switch(crossing) {
